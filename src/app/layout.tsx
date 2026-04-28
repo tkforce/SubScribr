@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "SubScribr — Find every subscription hiding in your inbox",
   description:
-    "AI-native subscription manager. Connects to Gmail (read-only), reads bilingual receipts in 中文 and English across TWD and USD, and tells you exactly what to cancel each week — with the original email as proof.",
+    "AI-native subscription manager. Connects to Gmail (read-only), reads bilingual receipts across multiple currencies, and tells you exactly what to cancel each week — with the original email as proof.",
 };
 
 export default function RootLayout({

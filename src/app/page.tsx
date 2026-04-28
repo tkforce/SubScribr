@@ -82,8 +82,9 @@ export default function Home() {
             </h1>
             <p className="mt-6 max-w-2xl text-lg leading-8 text-zinc-600 dark:text-zinc-400">
               SubScribr connects to Gmail (read-only), reads 90 days of receipts
-              in 中文 and English across TWD and USD, and tells you exactly what
-              to cancel each week — with the original email as proof.
+              across English and Chinese billing emails in multiple currencies,
+              and tells you exactly what to cancel each week — with the
+              original email as proof.
             </p>
             <div className="mt-10 flex w-full max-w-md flex-col items-center gap-3 sm:flex-row">
               <input
@@ -114,7 +115,7 @@ export default function Home() {
                     <div className="mb-4 flex items-center justify-between">
                       <div>
                         <p className="text-xs font-medium uppercase tracking-wider text-zinc-500">
-                          本週需要注意 · This week
+                          This week
                         </p>
                         <p className="mt-1 text-base font-semibold">
                           3 things to look at
@@ -135,15 +136,15 @@ export default function Home() {
                       />
                       <AlertCard
                         priority="medium"
-                        title="KKBOX 家庭方案 月底續約"
-                        body="NT$298 · 漲價警示：去年同期為 NT$249（+19.7%）。"
-                        primary="查看詳情"
-                        secondary="保留"
+                        title="KKBOX Family renews at end of month"
+                        body="NT$298 · Price alert — was NT$249 a year ago (+19.7%)."
+                        primary="Details"
+                        secondary="Keep"
                       />
                       <AlertCard
                         priority="low"
                         title="iCloud+ 200GB renews Friday"
-                        body="NT$90 · 使用率 82%，建議維持。"
+                        body="NT$90 · 82% usage this quarter — worth keeping."
                         primary="Snooze"
                         secondary="OK"
                       />
@@ -153,7 +154,7 @@ export default function Home() {
                   {/* Right: Monthly overview + subscription list */}
                   <div className="lg:col-span-3">
                     <div className="mb-4 grid grid-cols-3 gap-3">
-                      <Stat label="本月支出" value="NT$3,847" trend="+12% MoM" trendColor="text-rose-500" />
+                      <Stat label="This month" value="NT$3,847" trend="+12% MoM" trendColor="text-rose-500" />
                       <Stat label="Active" value="14" trend="2 new" trendColor="text-zinc-500" />
                       <Stat label="Saved YTD" value="NT$2,140" trend="↓ cancelled" trendColor="text-emerald-500" />
                     </div>
@@ -177,8 +178,8 @@ export default function Home() {
                           confidence: 0.99,
                         },
                         {
-                          name: "KKBOX 家庭方案",
-                          tag: "音樂 · 月底續約",
+                          name: "KKBOX Family",
+                          tag: "Music · End of month",
                           price: "NT$298",
                           color: "from-sky-500 to-blue-600",
                           initial: "K",
@@ -186,8 +187,8 @@ export default function Home() {
                           warn: true,
                         },
                         {
-                          name: "Netflix 進階方案",
-                          tag: "娛樂 · Monthly",
+                          name: "Netflix Premium",
+                          tag: "Streaming · Monthly",
                           price: "NT$390",
                           color: "from-rose-500 to-red-600",
                           initial: "N",
@@ -195,7 +196,7 @@ export default function Home() {
                         },
                         {
                           name: "iCloud+ 200GB",
-                          tag: "雲端 · Friday",
+                          tag: "Storage · Friday",
                           price: "NT$90",
                           color: "from-zinc-500 to-zinc-700",
                           initial: "i",
@@ -246,11 +247,11 @@ export default function Home() {
               First-time onboarding · streaming progress
             </p>
             <div className="mt-4 space-y-2 font-mono text-sm">
-              <ProgressLine done>掃描過去 90 天郵件… 找到 127 封候選</ProgressLine>
-              <ProgressLine done>HTML → plain text · thread 去重完成</ProgressLine>
-              <ProgressLine done>LLM 解析中… 已辨識 8 個訂閱</ProgressLine>
-              <ProgressLine done>LLM 解析中… 已辨識 14 個訂閱</ProgressLine>
-              <ProgressLine running>正在分析「本週需要注意」…</ProgressLine>
+              <ProgressLine done>Scanning the last 90 days of email… 127 candidates found</ProgressLine>
+              <ProgressLine done>HTML → plain text · thread dedupe complete</ProgressLine>
+              <ProgressLine done>LLM extracting… 8 subscriptions identified</ProgressLine>
+              <ProgressLine done>LLM extracting… 14 subscriptions identified</ProgressLine>
+              <ProgressLine running>Generating this week&apos;s alerts…</ProgressLine>
             </div>
           </div>
         </section>
@@ -380,8 +381,8 @@ export default function Home() {
                 <Metric label="Category" value={0.89} />
               </div>
               <p className="mt-5 text-xs text-zinc-500">
-                F1 across 80-row 繁中 golden set · 15 services · updated each
-                prompt revision
+                F1 across an 80-row Traditional Chinese golden set · 15
+                services · updated each prompt revision
               </p>
             </div>
           </div>
@@ -602,7 +603,7 @@ const features = [
     ),
   },
   {
-    title: "Bilingual extraction · 中英 + TWD/USD",
+    title: "Bilingual extraction, multi-currency",
     body: "Claude reads mixed-language receipts with structured output: service, amount, currency, billing period, next charge date, category, and a confidence score for each one — handled in the same pass.",
     color: "from-fuchsia-500 to-purple-600",
     icon: (
@@ -626,7 +627,7 @@ const features = [
     ),
   },
   {
-    title: "「本週需要注意」AI agent",
+    title: "This-week priority agent",
     body: "A single agent armed with tools — query subscriptions, fetch source email context, calculate trends, detect anomalies — produces priority-sorted 🔴🟡🟢 cards with cancel-ready reasoning, streamed live.",
     color: "from-rose-500 to-orange-500",
     icon: (
@@ -647,7 +648,7 @@ const features = [
     ),
   },
   {
-    title: "「本月分析」narrative",
+    title: "Monthly narrative analysis",
     body: "Streaming top-3 changes, plain-language AI observations, and one or two concrete recommendations every month — built on the service knowledge module so price hikes and plan rules aren't a surprise.",
     color: "from-emerald-500 to-teal-600",
     icon: (
