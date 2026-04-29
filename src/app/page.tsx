@@ -89,10 +89,6 @@ export default async function Home() {
         {/* Hero */}
         <section className="mx-auto w-full max-w-6xl px-6 pt-16 pb-24 sm:px-8 sm:pt-24 sm:pb-32">
           <div className="flex flex-col items-center text-center">
-            <span className="inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-white/60 px-3 py-1 text-xs font-medium text-zinc-600 backdrop-blur dark:border-white/10 dark:bg-white/5 dark:text-zinc-300">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-              Private beta · Powered by Claude
-            </span>
             <h1 className="mt-6 max-w-3xl text-4xl font-semibold tracking-tight sm:text-6xl">
               Find every subscription{" "}
               <span className="bg-gradient-to-r from-indigo-500 via-fuchsia-500 to-rose-500 bg-clip-text text-transparent">
