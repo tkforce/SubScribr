@@ -3,6 +3,7 @@ import type { DefaultSession } from "next-auth";
 declare module "next-auth" {
   interface Session {
     error?: "RefreshAccessTokenError";
+    access_token?: string;
     user: DefaultSession["user"];
   }
 }
