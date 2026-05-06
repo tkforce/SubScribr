@@ -10,7 +10,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         params: {
           scope: `openid email profile ${GMAIL_SCOPE}`,
           access_type: "offline",
-          prompt: "consent",
+          // prompt: "consent",
         },
       },
     }),
@@ -51,7 +51,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         token.access_token = refreshed.access_token;
         token.expires_at = Math.floor(Date.now() / 1000) + refreshed.expires_in;
-        if (refreshed.refresh_token) token.refresh_token = refreshed.refresh_token;
+        if (refreshed.refresh_token)
+          token.refresh_token = refreshed.refresh_token;
         delete token.error;
         return token;
       } catch (err) {
