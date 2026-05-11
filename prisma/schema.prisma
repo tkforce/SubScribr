@@ -1,0 +1,116 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id         String   @id @default(cuid())
+  email      String   @unique
+  gmailToken String?
+  createdAt  DateTime @default(now())
+
+  subscriptions Subscription[]
+  billingEvents BillingEvent[]
+  alerts        Alert[]
+  agentTraces   AgentTrace[]
+}
+
+model Subscription {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  serviceName String
+  displayName String?
+
+  amount          Decimal
+  currency        String
+  amountInTwd     Decimal
+  cycle           String
+  nextBillingDate DateTime?
+  category        String
+
+  status      String    @default("active")
+  cancelledAt DateTime?
+  hiddenAt    DateTime?
+
+  source String @default("gmail")
+
+  isTrial     Boolean   @default(false)
+  trialEndsAt DateTime?
+
+  firstSeenAt DateTime
+  lastSeenAt  DateTime
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  billingEvents BillingEvent[]
+
+  @@unique([userId, serviceName])
+  @@index([userId, status])
+}
+
+model BillingEvent {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  subscriptionId String?
+  subscription   Subscription? @relation(fields: [subscriptionId], references: [id])
+
+  gmailMessageId  String   @unique
+  emailReceivedAt DateTime
+
+  rawServiceName  String
+  serviceName     String
+  amount          Decimal
+  currency        String
+  amountInTwd     Decimal
+  cycle           String
+  emailSignalType String
+
+  promptVersion String
+
+  createdAt DateTime @default(now())
+
+  @@index([userId, serviceName, emailReceivedAt(sort: Desc)])
+  @@index([userId, emailReceivedAt])
+}
+
+model Alert {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  type        String
+  priority    String
+  serviceName String
+  payload     Json
+  status      String
+  expiresAt   DateTime?
+
+  createdAt DateTime @default(now())
+
+  @@index([userId, status])
+}
+
+model AgentTrace {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  section      String
+  steps        Json
+  totalTokens  Int
+  totalCostUsd Decimal
+  status       String
+
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
+}
