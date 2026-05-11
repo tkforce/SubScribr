@@ -42,3 +42,5 @@ next-env.d.ts
 
 # claude session scratch worktrees
 .claude/
+
+/src/generated/prisma
