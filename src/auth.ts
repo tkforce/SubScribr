@@ -1,5 +1,6 @@
 import NextAuth from "next-auth";
 import Google from "next-auth/providers/google";
+import { db } from "@/lib/db";
 
 const GMAIL_SCOPE = "https://www.googleapis.com/auth/gmail.readonly";
 
@@ -17,11 +18,23 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   ],
   session: { strategy: "jwt" },
   callbacks: {
-    async jwt({ token, account }) {
+    async jwt({ token, account, profile }) {
       if (account) {
         token.access_token = account.access_token;
         token.refresh_token = account.refresh_token;
         token.expires_at = account.expires_at;
+
+        const email = profile?.email ?? token.email;
+        if (email) {
+          const dbUser = await db.user.upsert({
+            where: { email },
+            create: { email },
+            update: {},
+            select: { id: true },
+          });
+          token.userId = dbUser.id;
+        }
+
         return token;
       }
 
@@ -64,6 +77,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     async session({ session, token }) {
       session.error = token.error;
       session.access_token = token.access_token;
+      if (token.userId) session.userId = token.userId;
       return session;
     },
   },
