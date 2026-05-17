@@ -194,12 +194,10 @@ function stripHtml(html: string): string {
     .trim();
 }
 
-export async function fetchSubscriptionEmails(
+export async function fetchMessagesByIds(
   accessToken: string,
+  ids: string[],
 ): Promise<SubscriptionEmail[]> {
-  const query = buildSubscriptionQuery(90);
-  const ids = await listMessageIds(accessToken, query);
-
   const results: SubscriptionEmail[] = [];
   for (let i = 0; i < ids.length; i += BATCH_SIZE) {
     const batch = ids.slice(i, i + BATCH_SIZE);
@@ -209,4 +207,12 @@ export async function fetchSubscriptionEmails(
     results.push(...batchResults);
   }
   return results;
+}
+
+export async function fetchSubscriptionEmails(
+  accessToken: string,
+): Promise<SubscriptionEmail[]> {
+  const query = buildSubscriptionQuery(90);
+  const ids = await listMessageIds(accessToken, query);
+  return fetchMessagesByIds(accessToken, ids);
 }

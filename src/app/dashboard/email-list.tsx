@@ -2,6 +2,8 @@
 
 import { useState, useTransition } from "react";
 import { getSubscriptionEmails } from "@/app/actions/emails";
+import { ingestSubscriptionEmails } from "@/app/actions/ingest";
+import type { IngestStats } from "@/lib/ingestion";
 import type { SubscriptionEmail } from "@/lib/gmail";
 import { Button } from "@/components/ui/button";
 import {
@@ -24,8 +26,10 @@ export function EmailList() {
   const [emails, setEmails] = useState<SubscriptionEmail[]>([]);
   const [selected, setSelected] = useState<SubscriptionEmail | null>(null);
   const [isPending, startTransition] = useTransition();
+  const [isIngesting, startIngestTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [hasFetched, setHasFetched] = useState(false);
+  const [ingestStats, setIngestStats] = useState<IngestStats | null>(null);
 
   const onFetch = () => {
     setError(null);
@@ -40,11 +44,31 @@ export function EmailList() {
     });
   };
 
+  const onIngest = () => {
+    setError(null);
+    setIngestStats(null);
+    startIngestTransition(async () => {
+      try {
+        const stats = await ingestSubscriptionEmails();
+        setIngestStats(stats);
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Unknown error");
+      }
+    });
+  };
+
   return (
     <>
       <div className="flex flex-wrap items-center gap-3">
         <Button onClick={onFetch} disabled={isPending}>
           {isPending ? "Fetching…" : "Fetch subscription emails (90d)"}
+        </Button>
+        <Button
+          variant="secondary"
+          onClick={onIngest}
+          disabled={isIngesting}
+        >
+          {isIngesting ? "Ingesting…" : "Ingest 90d to DB"}
         </Button>
         {emails.length > 0 && (
           <>
@@ -69,6 +93,18 @@ export function EmailList() {
         )}
         {error && <span className="text-sm text-destructive">{error}</span>}
       </div>
+
+      {ingestStats && (
+        <div className="mt-4 rounded-md border bg-muted/40 p-3 text-sm">
+          <div className="font-medium">Ingest result</div>
+          <div className="mt-1 grid grid-cols-2 gap-x-6 gap-y-1 text-muted-foreground sm:grid-cols-4">
+            <div>candidate: <span className="text-foreground">{ingestStats.candidateCount}</span></div>
+            <div>skipped (already in DB): <span className="text-foreground">{ingestStats.skippedExistingCount}</span></div>
+            <div>blacklisted: <span className="text-foreground">{ingestStats.blacklistedCount}</span></div>
+            <div>ingested: <span className="text-foreground">{ingestStats.ingestedCount}</span></div>
+          </div>
+        </div>
+      )}
 
       {emails.length > 0 && (
         <div className="mt-6 rounded-md border">
