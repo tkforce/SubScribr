@@ -14,12 +14,14 @@ import {
 } from "@/lib/extraction";
 import { normalizeServiceName } from "@/lib/service-normalization";
 import { convertToTwd } from "@/lib/fx";
+import { upsertSubscriptionsForServices } from "@/lib/subscription-derive";
 
 export type IngestStats = {
   candidateCount: number;
   blacklistedCount: number;
   ingestedCount: number;
   skippedExistingCount: number;
+  subscriptionsUpserted: number;
 };
 
 type BillingEventInsert = {
@@ -45,13 +47,8 @@ export function processEmail(
   const extraction: Extraction = ExtractionSchema.parse(extractDummy(email));
   if (!extraction.isSubscriptionRelated) return null;
 
-  const {
-    rawServiceName,
-    amount,
-    currency,
-    cycle,
-    emailSignalType,
-  } = extraction;
+  const { rawServiceName, amount, currency, cycle, emailSignalType } =
+    extraction;
   if (
     rawServiceName === undefined ||
     amount === undefined ||
@@ -117,11 +114,19 @@ export async function ingestEmails(
     ingestedCount = result.count;
   }
 
+  // only upsert subscriptions for services that had new billing events to avoid unnecessary upserts
+  const affected = new Set(inserts.map((i) => i.serviceName));
+  const subscriptionsUpserted = await upsertSubscriptionsForServices(
+    userId,
+    affected,
+  );
+
   return {
     candidateCount,
     blacklistedCount,
     ingestedCount,
     skippedExistingCount,
+    subscriptionsUpserted,
   };
 }
 

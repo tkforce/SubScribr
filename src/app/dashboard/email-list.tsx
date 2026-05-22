@@ -97,11 +97,12 @@ export function EmailList() {
       {ingestStats && (
         <div className="mt-4 rounded-md border bg-muted/40 p-3 text-sm">
           <div className="font-medium">Ingest result</div>
-          <div className="mt-1 grid grid-cols-2 gap-x-6 gap-y-1 text-muted-foreground sm:grid-cols-4">
+          <div className="mt-1 grid grid-cols-2 gap-x-6 gap-y-1 text-muted-foreground sm:grid-cols-5">
             <div>candidate: <span className="text-foreground">{ingestStats.candidateCount}</span></div>
             <div>skipped (already in DB): <span className="text-foreground">{ingestStats.skippedExistingCount}</span></div>
             <div>blacklisted: <span className="text-foreground">{ingestStats.blacklistedCount}</span></div>
             <div>ingested: <span className="text-foreground">{ingestStats.ingestedCount}</span></div>
+            <div>subscriptions upserted: <span className="text-foreground">{ingestStats.subscriptionsUpserted}</span></div>
           </div>
         </div>
       )}
