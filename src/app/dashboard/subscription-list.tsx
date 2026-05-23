@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
-export function EmailList() {
+export function SubscriptionList() {
   const [emails, setEmails] = useState<SubscriptionEmail[]>([]);
   const [selected, setSelected] = useState<SubscriptionEmail | null>(null);
   const [isPending, startTransition] = useTransition();

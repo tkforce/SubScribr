@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { signOutAction } from "@/app/actions/auth";
 import { Button } from "@/components/ui/button";
-import { EmailList } from "./email-list";
+import { SubscriptionList } from "./subscription-list";
 
 export default async function DashboardPage() {
   const session = await auth();
@@ -30,7 +30,7 @@ export default async function DashboardPage() {
         </p>
       )}
 
-      <EmailList />
+      <SubscriptionList />
     </main>
   );
 }
