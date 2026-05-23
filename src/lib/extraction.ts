@@ -37,7 +37,7 @@ export const PROMPT_VERSION = "v0-dummy";
 export function extractDummy(email: SubscriptionEmail): Extraction {
   return {
     isSubscriptionRelated: true,
-    rawServiceName: senderDomain(email.from),
+    rawServiceName: email.from,
     amount: 0,
     currency: "TWD",
     cycle: "monthly",
@@ -45,12 +45,4 @@ export function extractDummy(email: SubscriptionEmail): Extraction {
     emailSignalType: "billing",
     isTrial: false,
   };
-}
-
-function senderDomain(from: string): string {
-  const match = from.match(/<([^>]+)>/) ?? from.match(/(\S+@\S+)/);
-  const addr = match ? match[1] : from;
-  const at = addr.indexOf("@");
-  if (at === -1) return addr.trim() || "unknown";
-  return addr.slice(at + 1).trim().toLowerCase() || "unknown";
 }
