@@ -28,12 +28,25 @@ export type DerivedState = {
   lastSeenAt: Date;
 };
 
+// Signals that prove a billing relationship exists. A service whose entire
+// event log is only soft signals (we_miss_you, trial_reminder) has no
+// evidence of an actual subscription — don't materialize one.
+const CONCRETE_SIGNALS = new Set([
+  "billing",
+  "price_change",
+  "renewal_notice",
+  "cancellation",
+]);
+
 // Fold sorted events into final Subscription state. No I/O.
-// Returns null only on empty input — caller should not pass empty.
+// Returns null on empty input or when no concrete signal is present.
 export function deriveSubscriptionState(
   events: DeriveEvent[],
 ): DerivedState | null {
   if (events.length === 0) return null;
+  if (!events.some((e) => CONCRETE_SIGNALS.has(e.emailSignalType))) {
+    return null;
+  }
 
   const sorted = [...events].sort(
     (a, b) => a.emailReceivedAt.getTime() - b.emailReceivedAt.getTime(),

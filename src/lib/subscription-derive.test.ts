@@ -148,13 +148,37 @@ describe("deriveSubscriptionState", () => {
     expect(s!.isTrial).toBe(true);
   });
 
-  it("we_miss_you alone does not flip status from default active", () => {
+  it("we_miss_you alone produces no subscription (no concrete signal)", () => {
     const s = deriveSubscriptionState([
       ev({
         emailReceivedAt: new Date("2026-02-01"),
         emailSignalType: "we_miss_you",
       }),
     ]);
-    expect(s!.status).toBe("active");
+    expect(s).toBeNull();
+  });
+
+  it("trial_reminder alone produces no subscription (no concrete signal)", () => {
+    const s = deriveSubscriptionState([
+      ev({
+        emailReceivedAt: new Date("2026-01-01"),
+        emailSignalType: "trial_reminder",
+      }),
+    ]);
+    expect(s).toBeNull();
+  });
+
+  it("trial_reminder + we_miss_you (both soft) still produces no subscription", () => {
+    const s = deriveSubscriptionState([
+      ev({
+        emailReceivedAt: new Date("2026-01-01"),
+        emailSignalType: "trial_reminder",
+      }),
+      ev({
+        emailReceivedAt: new Date("2026-02-01"),
+        emailSignalType: "we_miss_you",
+      }),
+    ]);
+    expect(s).toBeNull();
   });
 });
