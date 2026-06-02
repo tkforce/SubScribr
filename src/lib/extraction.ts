@@ -7,10 +7,10 @@ export const ExtractionSchema = z.object({
     .enum(["one_time_purchase", "promotional", "service_unrelated", "unclear"])
     .optional(),
   rawServiceName: z.string().optional(),
-  amount: z.number().optional(),
+  amount: z.number().positive().optional(),
   currency: z.enum(["TWD", "USD", "JPY", "EUR"]).optional(),
   cycle: z.enum(["monthly", "yearly", "quarterly", "one-time"]).optional(),
-  nextBillingDate: z.string().optional(),
+  nextBillingDate: z.iso.date().optional(),
   category: z
     .enum(["entertainment", "productivity", "ai", "cloud", "comm", "other"])
     .optional(),
@@ -25,7 +25,7 @@ export const ExtractionSchema = z.object({
     ])
     .optional(),
   isTrial: z.boolean().optional(),
-  trialEndsAt: z.string().optional(),
+  trialEndsAt: z.iso.date().optional(),
 });
 
 export type Extraction = z.infer<typeof ExtractionSchema>;
