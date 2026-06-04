@@ -1,5 +1,8 @@
 import { z } from "zod";
+import { generateObject } from "ai";
+import type { LanguageModel } from "ai";
 import type { SubscriptionEmail } from "@/lib/gmail";
+import { getModel } from "@/lib/llm";
 
 export const ExtractionSchema = z.object({
   isSubscriptionRelated: z.boolean(),
@@ -30,19 +33,67 @@ export const ExtractionSchema = z.object({
 
 export type Extraction = z.infer<typeof ExtractionSchema>;
 
-export const PROMPT_VERSION = "v0-dummy";
+export const PROMPT_VERSION = "v1-gemini-flash-zero-shot";
 
-// Week 3 replaces this with a real LLM call. Stays here so the pipeline shape
-// (and BillingEvent insert payload) is fully exercised before the LLM lands.
-export function extractDummy(email: SubscriptionEmail): Extraction {
-  return {
-    isSubscriptionRelated: true,
-    rawServiceName: email.from,
-    amount: 0,
-    currency: "TWD",
-    cycle: "monthly",
-    category: "other",
-    emailSignalType: "billing",
-    isTrial: false,
-  };
+export const SYSTEM_PROMPT = `你是訂閱信件分析師。從 email 中抽取訂閱資訊，依下方 JSON schema 回應。
+
+判斷 isSubscriptionRelated 的規則：
+- 是訂閱：定期扣款、月/年費、會員續訂、試用期提醒、訂閱取消通知
+- 不是訂閱（false）：
+  - 單次購買（Uber Eats 訂單、電商發票、餐廳消費）→ one_time_purchase
+  - 行銷信、優惠券、推播 → promotional
+  - 電子發票開立通知、密碼重設、登入提醒 → service_unrelated
+  - 模糊無法判斷 → unclear
+
+抽欄位規則：
+- amount: 純數字，不含貨幣符號。多個金額時取「實際扣款總額」
+- rawServiceName: 服務的「品牌名」，不是公司全名（例如 "Netflix" 而非 "Netflix International B.V."）
+- emailSignalType:
+  - billing: 已扣款通知 / 收據
+  - renewal_notice: 即將續訂提醒（還沒扣）
+  - trial_reminder: 試用期將結束
+  - price_change: 漲價/降價公告
+  - cancellation: 取消確認
+  - we_miss_you: 回流促銷信（已停訂閱）
+- nextBillingDate: ISO 格式 (YYYY-MM-DD)
+
+isSubscriptionRelated=false 時，只填 notSubscriptionReason，其他欄位省略。`;
+
+export function formatUserPrompt(email: SubscriptionEmail): string {
+  return `From: ${email.from}
+Subject: ${email.subject}
+Body:
+${email.body}`;
+}
+
+function logExtractionFailure(gmailMessageId: string, err: unknown): void {
+  const name = err instanceof Error ? err.name : "Unknown";
+  const message = err instanceof Error ? err.message : String(err);
+  const kind =
+    name.includes("Validation") || name.includes("NoObject")
+      ? "schema_fail"
+      : "api_error";
+  console.warn(
+    `[extraction:${kind}] gmailMessageId=${gmailMessageId} ${message}`,
+  );
+}
+
+// Returns the parsed extraction, or null on any failure (skip + log, no retry).
+// The caller decides what to do with isSubscriptionRelated=false.
+export async function llmExtract(
+  email: SubscriptionEmail,
+  model: LanguageModel = getModel(),
+): Promise<Extraction | null> {
+  try {
+    const { object } = await generateObject({
+      model,
+      schema: ExtractionSchema,
+      system: SYSTEM_PROMPT,
+      prompt: formatUserPrompt(email),
+    });
+    return object;
+  } catch (err) {
+    logExtractionFailure(email.id, err);
+    return null;
+  }
 }

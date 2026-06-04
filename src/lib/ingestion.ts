@@ -9,7 +9,7 @@ import { isBlacklisted } from "@/lib/blacklist";
 import {
   ExtractionSchema,
   PROMPT_VERSION,
-  extractDummy,
+  llmExtract,
   type Extraction,
 } from "@/lib/extraction";
 import { normalizeServiceName } from "@/lib/service-normalization";
@@ -44,7 +44,7 @@ export function processEmail(
 ): BillingEventInsert | null {
   if (isBlacklisted(email)) return null;
 
-  const extraction: Extraction = ExtractionSchema.parse(extractDummy(email));
+  const extraction: Extraction = ExtractionSchema.parse(llmExtract(email));
   if (!extraction.isSubscriptionRelated) return null;
 
   const { rawServiceName, amount, currency, cycle, emailSignalType } =
