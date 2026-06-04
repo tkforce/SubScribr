@@ -1,3 +1,4 @@
+import pMap from "p-map";
 import { db } from "@/lib/db";
 import {
   buildSubscriptionQuery,
@@ -6,12 +7,9 @@ import {
   type SubscriptionEmail,
 } from "@/lib/gmail";
 import { isBlacklisted } from "@/lib/blacklist";
-import {
-  ExtractionSchema,
-  PROMPT_VERSION,
-  llmExtract,
-  type Extraction,
-} from "@/lib/extraction";
+import { PROMPT_VERSION, llmExtract } from "@/lib/extraction";
+import { getModel } from "@/lib/llm";
+import type { LanguageModel } from "ai";
 import { normalizeServiceName } from "@/lib/service-normalization";
 import { convertToTwd } from "@/lib/fx";
 import { upsertSubscriptionsForServices } from "@/lib/subscription-derive";
@@ -38,14 +36,22 @@ type BillingEventInsert = {
   promptVersion: string;
 };
 
-export function processEmail(
+export async function processEmail(
   email: SubscriptionEmail,
   userId: string,
-): BillingEventInsert | null {
+  model: LanguageModel = getModel(),
+): Promise<BillingEventInsert | null> {
   if (isBlacklisted(email)) return null;
 
-  const extraction: Extraction = ExtractionSchema.parse(llmExtract(email));
-  if (!extraction.isSubscriptionRelated) return null;
+  const extraction = await llmExtract(email, model);
+  if (extraction === null) return null;
+
+  if (!extraction.isSubscriptionRelated) {
+    console.info(
+      `[extraction:not_subscription] gmailMessageId=${email.id} reason=${extraction.notSubscriptionReason ?? "unspecified"} subject=${email.subject}`,
+    );
+    return null;
+  }
 
   const { rawServiceName, amount, currency, cycle, emailSignalType } =
     extraction;
@@ -56,6 +62,7 @@ export function processEmail(
     cycle === undefined ||
     emailSignalType === undefined
   ) {
+    console.warn(`[extraction:missing_fields] gmailMessageId=${email.id}`);
     return null;
   }
 
@@ -94,16 +101,17 @@ export async function ingestEmails(
 
   const emails = await fetchMessagesByIds(accessToken, newIds);
 
-  const inserts: BillingEventInsert[] = [];
-  let blacklistedCount = 0;
-  for (const email of emails) {
-    const row = processEmail(email, userId);
-    if (row === null) {
-      blacklistedCount += 1;
-      continue;
-    }
-    inserts.push(row);
-  }
+  const results = await pMap(
+    emails,
+    (email) => processEmail(email, userId),
+    { concurrency: 10, stopOnError: false },
+  );
+  const inserts = results.filter(
+    (r): r is BillingEventInsert => r !== null,
+  );
+  // Everything fetched but not turned into an insert: blacklisted, not a
+  // subscription, missing fields, or an extraction failure.
+  const blacklistedCount = emails.length - inserts.length;
 
   let ingestedCount = 0;
   if (inserts.length > 0) {
