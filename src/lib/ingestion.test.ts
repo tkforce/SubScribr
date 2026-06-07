@@ -35,12 +35,13 @@ describe("processEmail", () => {
       emailSignalType: "billing",
       isTrial: false,
     });
-    const row = await processEmail(email, "user-1", model);
-    expect(row).not.toBeNull();
-    expect(row!.serviceName).toBe("cursor"); // slugify fallback, aliases empty
-    expect(row!.rawServiceName).toBe("Cursor");
-    expect(row!.amountInTwd).toBeCloseTo(20 * 31.5, 2);
-    expect(row!.gmailMessageId).toBe("msg-1");
+    const out = await processEmail(email, "user-1", model);
+    expect(out.kind).toBe("inserted");
+    if (out.kind !== "inserted") return;
+    expect(out.row.serviceName).toBe("cursor"); // slugify fallback, aliases empty
+    expect(out.row.rawServiceName).toBe("Cursor");
+    expect(out.row.amountInTwd).toBeCloseTo(20 * 31.5, 2);
+    expect(out.row.gmailMessageId).toBe("msg-1");
   });
 
   it("returns null when isSubscriptionRelated is false", async () => {
@@ -48,11 +49,11 @@ describe("processEmail", () => {
       isSubscriptionRelated: false,
       notSubscriptionReason: "one_time_purchase",
     });
-    const row = await processEmail(email, "user-1", model);
-    expect(row).toBeNull();
+    const out = await processEmail(email, "user-1", model);
+    expect(out.kind).toBe("not_subscription");
   });
 
-  it("returns null for a blacklisted email without calling the model", async () => {
+  it("returns blacklisted for a blacklisted email without calling the model", async () => {
     const blacklisted: SubscriptionEmail = {
       ...email,
       subject: "Please verify your email",
@@ -62,7 +63,7 @@ describe("processEmail", () => {
         throw new Error("model should not be called");
       },
     });
-    const row = await processEmail(blacklisted, "user-1", throwing);
-    expect(row).toBeNull();
+    const out = await processEmail(blacklisted, "user-1", throwing);
+    expect(out.kind).toBe("blacklisted");
   });
 });
