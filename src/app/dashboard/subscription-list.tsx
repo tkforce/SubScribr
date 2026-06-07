@@ -101,6 +101,9 @@ export function SubscriptionList() {
             <div>candidate: <span className="text-foreground">{ingestStats.candidateCount}</span></div>
             <div>skipped (already in DB): <span className="text-foreground">{ingestStats.skippedExistingCount}</span></div>
             <div>blacklisted: <span className="text-foreground">{ingestStats.blacklistedCount}</span></div>
+            <div>not subscription: <span className="text-foreground">{ingestStats.notSubscriptionCount}</span></div>
+            <div>missing fields: <span className="text-foreground">{ingestStats.missingFieldsCount}</span></div>
+            <div>extract failed: <span className="text-foreground">{ingestStats.extractFailedCount}</span></div>
             <div>ingested: <span className="text-foreground">{ingestStats.ingestedCount}</span></div>
             <div>subscriptions upserted: <span className="text-foreground">{ingestStats.subscriptionsUpserted}</span></div>
           </div>

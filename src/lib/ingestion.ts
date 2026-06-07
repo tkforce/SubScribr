@@ -16,11 +16,23 @@ import { upsertSubscriptionsForServices } from "@/lib/subscription-derive";
 
 export type IngestStats = {
   candidateCount: number;
-  blacklistedCount: number;
-  ingestedCount: number;
   skippedExistingCount: number;
+  blacklistedCount: number;
+  notSubscriptionCount: number;
+  missingFieldsCount: number;
+  extractFailedCount: number;
+  ingestedCount: number;
   subscriptionsUpserted: number;
 };
+
+// Why each fetched email did or didn't become a BillingEvent. Lets ingestEmails
+// report a real breakdown instead of lumping every non-insert into "blacklisted".
+export type ProcessOutcome =
+  | { kind: "inserted"; row: BillingEventInsert }
+  | { kind: "blacklisted" }
+  | { kind: "not_subscription" }
+  | { kind: "missing_fields" }
+  | { kind: "extract_failed" };
 
 type BillingEventInsert = {
   userId: string;
@@ -40,17 +52,17 @@ export async function processEmail(
   email: SubscriptionEmail,
   userId: string,
   model: LanguageModel = getModel(),
-): Promise<BillingEventInsert | null> {
-  if (isBlacklisted(email)) return null;
+): Promise<ProcessOutcome> {
+  if (isBlacklisted(email)) return { kind: "blacklisted" };
 
   const extraction = await llmExtract(email, model);
-  if (extraction === null) return null;
+  if (extraction === null) return { kind: "extract_failed" };
 
   if (!extraction.isSubscriptionRelated) {
     console.info(
       `[extraction:not_subscription] gmailMessageId=${email.id} reason=${extraction.notSubscriptionReason ?? "unspecified"} subject=${email.subject}`,
     );
-    return null;
+    return { kind: "not_subscription" };
   }
 
   const { rawServiceName, amount, currency, cycle, emailSignalType } =
@@ -63,23 +75,26 @@ export async function processEmail(
     emailSignalType === undefined
   ) {
     console.warn(`[extraction:missing_fields] gmailMessageId=${email.id}`);
-    return null;
+    return { kind: "missing_fields" };
   }
 
   const { canonicalId } = normalizeServiceName(rawServiceName);
 
   return {
-    userId,
-    gmailMessageId: email.id,
-    emailReceivedAt: parseEmailDate(email.date),
-    rawServiceName,
-    serviceName: canonicalId,
-    amount,
-    currency,
-    amountInTwd: convertToTwd(amount, currency),
-    cycle,
-    emailSignalType,
-    promptVersion: PROMPT_VERSION,
+    kind: "inserted",
+    row: {
+      userId,
+      gmailMessageId: email.id,
+      emailReceivedAt: parseEmailDate(email.date),
+      rawServiceName,
+      serviceName: canonicalId,
+      amount,
+      currency,
+      amountInTwd: convertToTwd(amount, currency),
+      cycle,
+      emailSignalType,
+      promptVersion: PROMPT_VERSION,
+    },
   };
 }
 
@@ -87,7 +102,7 @@ export async function ingestEmails(
   accessToken: string,
   userId: string,
 ): Promise<IngestStats> {
-  const query = buildSubscriptionQuery(90);
+  const query = buildSubscriptionQuery(60);
   const allIds = await listMessageIds(accessToken, query);
   const candidateCount = allIds.length;
 
@@ -101,17 +116,39 @@ export async function ingestEmails(
 
   const emails = await fetchMessagesByIds(accessToken, newIds);
 
-  const results = await pMap(
-    emails,
-    (email) => processEmail(email, userId),
-    { concurrency: 10, stopOnError: false },
-  );
-  const inserts = results.filter(
-    (r): r is BillingEventInsert => r !== null,
-  );
-  // Everything fetched but not turned into an insert: blacklisted, not a
-  // subscription, missing fields, or an extraction failure.
-  const blacklistedCount = emails.length - inserts.length;
+  const results = await pMap(emails, (email) => processEmail(email, userId), {
+    // Paid Tier 1 Gemini has plenty of RPM (~2k); the real ceiling is TPM
+    // (~4M) since each email is token-heavy (~3k tokens). concurrency × (60 /
+    // latency) × tokensPerCall must stay under TPM. 15-20 finishes our volume
+    // in seconds with comfortable headroom; the SDK's backoff absorbs bursts.
+    concurrency: 20,
+    stopOnError: false,
+  });
+
+  const inserts: BillingEventInsert[] = [];
+  let blacklistedCount = 0;
+  let notSubscriptionCount = 0;
+  let missingFieldsCount = 0;
+  let extractFailedCount = 0;
+  for (const r of results) {
+    switch (r.kind) {
+      case "inserted":
+        inserts.push(r.row);
+        break;
+      case "blacklisted":
+        blacklistedCount += 1;
+        break;
+      case "not_subscription":
+        notSubscriptionCount += 1;
+        break;
+      case "missing_fields":
+        missingFieldsCount += 1;
+        break;
+      case "extract_failed":
+        extractFailedCount += 1;
+        break;
+    }
+  }
 
   let ingestedCount = 0;
   if (inserts.length > 0) {
@@ -131,9 +168,12 @@ export async function ingestEmails(
 
   return {
     candidateCount,
-    blacklistedCount,
-    ingestedCount,
     skippedExistingCount,
+    blacklistedCount,
+    notSubscriptionCount,
+    missingFieldsCount,
+    extractFailedCount,
+    ingestedCount,
     subscriptionsUpserted,
   };
 }

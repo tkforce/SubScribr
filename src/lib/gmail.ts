@@ -18,7 +18,7 @@ export class GmailAuthError extends Error {
   }
 }
 
-export function buildSubscriptionQuery(days = 90): string {
+export function buildSubscriptionQuery(days = 60): string {
   const englishKeywords = [
     "subscription",
     "renewal",
@@ -212,7 +212,7 @@ export async function fetchMessagesByIds(
 export async function fetchSubscriptionEmails(
   accessToken: string,
 ): Promise<SubscriptionEmail[]> {
-  const query = buildSubscriptionQuery(90);
+  const query = buildSubscriptionQuery(60);
   const ids = await listMessageIds(accessToken, query);
   return fetchMessagesByIds(accessToken, ids);
 }

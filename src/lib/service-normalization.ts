@@ -49,11 +49,14 @@ export function normalizeServiceName(raw: string): {
 }
 
 export function slugify(s: string): string {
-  return s
+  // Keep Unicode letters/numbers (incl. CJK) — stripping to ASCII-only would
+  // collapse every Chinese-named service to "" and merge them under one id.
+  const out = s
     .toLowerCase()
     .trim()
-    .replace(/[^\w\s-]/g, "")
+    .replace(/[^\p{L}\p{N}\s-]/gu, "")
     .replace(/\s+/g, "-")
     .replace(/-+/g, "-")
     .replace(/^-|-$/g, "");
+  return out || "unknown";
 }

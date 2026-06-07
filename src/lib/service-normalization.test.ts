@@ -30,6 +30,17 @@ describe("normalizeServiceName", () => {
     expect(slugify("---weird---")).toBe("weird");
   });
 
+  it("slugify keeps CJK characters instead of stripping them to empty", () => {
+    expect(slugify("台灣大哥大")).toBe("台灣大哥大");
+    expect(slugify("中華電信")).toBe("中華電信");
+    expect(slugify("Apple 訂閱")).toBe("apple-訂閱");
+  });
+
+  it("slugify falls back to 'unknown' when nothing usable remains", () => {
+    expect(slugify("!!!")).toBe("unknown");
+    expect(slugify("   ")).toBe("unknown");
+  });
+
   it("returns unmatched=false when raw name not in any alias list", () => {
     const r = normalizeServiceName("Some Brand New Service");
     expect(r.matched).toBe(false);
