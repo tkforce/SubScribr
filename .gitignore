@@ -44,3 +44,9 @@ next-env.d.ts
 .claude/
 
 /src/generated/prisma
+.vscode/settings.json
+
+# extraction artifacts contain personal email content — never commit
+/sampleEmail/
+/docs/extractions/*
+!/docs/extractions/PROMPT_LOG.md

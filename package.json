@@ -8,7 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",
-    "analyze:names": "tsx scripts/analyze-raw-service-names.ts",
+    "inspect:extractions": "tsx scripts/inspect-extractions.ts",
     "postinstall": "prisma generate",
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate dev",
