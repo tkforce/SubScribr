@@ -30,3 +30,21 @@ Pattern 歸納（3 個）：
 - 電信月租帳單（台灣大哥大/遠傳）→ **是訂閱**（schema 本有 comm category）
 - trial 結束提醒（Google One 新用戶優惠將結束）→ **是訂閱**：試用期是訂閱
   生命週期的一部分，只是還沒開始付費
+
+---
+
+## v2-gemini-flash-fewshot-neg (2026-06-11)
+
+- 改動：
+  - 規則段收緊：「不是訂閱」新增 3 條 — 信用卡/銀行月結帳單、定期定額
+    投資扣款、帳務行政通知（皆 → service_unrelated）
+  - 「是訂閱」側補一句「電信月租帳單也算訂閱」鎖住邊界裁定，避免收緊
+    帳單規則誤殺電信帳單
+  - 字串尾端加 3 個 few-shot 負面範例（一個 FP pattern 一個）
+- Inspect: inspect-v2-gemini-flash-fewshot-neg-2026-06-11T10-18-01.json
+- Summary: total=225, blacklisted=0, true=16, false=209, failed=0
+- 對照 v1：
+  - true→false：4 筆（標記 FP 4/4 全翻 ✅、非預期 0）
+  - false→true：0 筆
+  - 誤殺真訂閱：0 ✅（true→true 16 = 20 − 4，電信帳單與 trial 全保留）
+- 殘留 FP：0 — 一輪迭代完成，user 已確認
