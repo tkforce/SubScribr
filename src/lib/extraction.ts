@@ -33,7 +33,7 @@ export const ExtractionSchema = z.object({
 
 export type Extraction = z.infer<typeof ExtractionSchema>;
 
-export const PROMPT_VERSION = "v2-gemini-flash-fewshot-neg";
+export const PROMPT_VERSION = "v3-gemini-flash-fewshot-neg2";
 
 export const SYSTEM_PROMPT = `你是訂閱信件分析師。從 email 中抽取訂閱資訊，依下方 JSON schema 回應。
 
@@ -42,6 +42,9 @@ export const SYSTEM_PROMPT = `你是訂閱信件分析師。從 email 中抽取�
   電信月租帳單（如手機門號月費）也算訂閱。
 - 不是訂閱（false）：
   - 單次購買（Uber Eats 訂單、電商發票、餐廳消費）→ one_time_purchase
+  - 儲值點數/預付卡/票券購買（健身房點數卡、分鐘計費卡等）：即使標示
+    「方案時長」或使用期限（如一年內有效），那是點數的有效期限，不是
+    定期扣款週期 → one_time_purchase
   - 行銷信、優惠券、推播 → promotional
   - 信用卡/銀行月結帳單繳款通知：那是多筆消費的彙總，不是單一服務的
     訂閱費 → service_unrelated
@@ -81,7 +84,13 @@ Subject: 台股定期定額買股預先圈存(或預收)款項通知書
 範例 3：
 Subject: Important – AWS Invoice e-mail address changes
 重點：帳務行政通知（設定變更），信中沒有任何實際扣款事件
-→ isSubscriptionRelated: false, notSubscriptionReason: service_unrelated`;
+→ isSubscriptionRelated: false, notSubscriptionReason: service_unrelated
+
+範例 4：
+Subject: 購買成功通知 | More Fit
+重點：購買健身房儲值點數（分鐘計費卡）。「方案時長 1年」是點數使用期限，
+不是定期扣款週期；即使商家是訂閱制常見的行業，單次購買就不是訂閱
+→ isSubscriptionRelated: false, notSubscriptionReason: one_time_purchase`;
 
 export function formatUserPrompt(email: SubscriptionEmail): string {
   return `From: ${email.from}
