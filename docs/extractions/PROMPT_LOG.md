@@ -48,3 +48,28 @@ Pattern 歸納（3 個）：
   - false→true：0 筆
   - 誤殺真訂閱：0 ✅（true→true 16 = 20 − 4，電信帳單與 trial 全保留）
 - 殘留 FP：0 — 一輪迭代完成，user 已確認
+
+---
+
+## v3-gemini-flash-fewshot-neg2 (2026-06-12)
+
+- 觸發：真實 Gmail ingest（非 fixture）發現新 FP — More Fit 健身房
+  「購買成功通知」×2 被判 true。舊 fixture（5/3）不含這批信，user 匯出
+  新 fixture subscribr-emails-20260612-1656.json（191 封）。
+- FP 分析：購買的是儲值點數（分鐘計費卡），LLM 把「方案時長 1年」誤讀
+  成年訂閱（cycle=yearly）。預付點數的有效期限 ≠ 訂閱週期。
+- 改動：
+  - 規則段「不是訂閱」新增：儲值點數/預付卡/票券購買 → one_time_purchase
+    （即使標示方案時長/使用期限）
+  - few-shot 範例 4：購買成功通知 | More Fit（用真實 Subject）
+- Baseline（v2 跑新 fixture）: inspect-v2-gemini-flash-fewshot-neg-2026-06-12T08-58-24.json
+  - total=191, true=12, false=179, failed=0（more-fit FP ×2 在 true 內）
+- Inspect: inspect-v3-gemini-flash-fewshot-neg2-2026-06-12T09-34-23.json
+  - total=191, true=10, false=181, failed=0
+- 對照 v2（新 fixture）：
+  - true→false：2 筆（more-fit 2/2 全翻 ✅、非預期 0）
+  - false→true：0 筆
+  - 誤殺真訂閱：0 ✅（true→true 10 全保留，含 cancellation 信）
+- 殘留 FP：0
+- 觀察：fixture 會過期 — 真實管線是 FP 的最終偵測面，fixture 要定期
+  從 Dashboard 重新匯出。
