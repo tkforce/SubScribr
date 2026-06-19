@@ -33,7 +33,7 @@ export const ExtractionSchema = z.object({
 
 export type Extraction = z.infer<typeof ExtractionSchema>;
 
-export const PROMPT_VERSION = "v3-gemini-flash-fewshot-neg2";
+export const PROMPT_VERSION = "v4-currency-rules-temp0";
 
 export const SYSTEM_PROMPT = `你是訂閱信件分析師。從 email 中抽取訂閱資訊，依下方 JSON schema 回應。
 
@@ -57,6 +57,13 @@ export const SYSTEM_PROMPT = `你是訂閱信件分析師。從 email 中抽取�
 
 抽欄位規則：
 - amount: 純數字，不含貨幣符號。多個金額時取「實際扣款總額」
+- currency: 依信件實際線索判斷，不要一律預設台幣。判斷優先序：
+  1. 明確貨幣標記最優先：NT$ / 新台幣 / 「元」→ TWD；US$ / USD → USD；
+     ¥ / 円 / JPY → JPY；€ / EUR → EUR
+  2. 只有裸 "$" 無其他標記時，看服務與寄件者來源：國外服務官方或 Stripe
+     收據（如 anthropic.com、openai.com）→ USD；Apple / Google / 本地電信
+     帳單若內文同時出現 NT$ → TWD
+  3. 仍無法判斷時才用金額量級輔助（月費 $20 多為 USD、$690 多為 TWD）
 - rawServiceName: 服務的「品牌名」，不是公司全名（例如 "Netflix" 而非 "Netflix International B.V."）
 - emailSignalType:
   - billing: 已扣款通知 / 收據
@@ -90,7 +97,19 @@ Subject: Important – AWS Invoice e-mail address changes
 Subject: 購買成功通知 | More Fit
 重點：購買健身房儲值點數（分鐘計費卡）。「方案時長 1年」是點數使用期限，
 不是定期扣款週期；即使商家是訂閱制常見的行業，單次購買就不是訂閱
-→ isSubscriptionRelated: false, notSubscriptionReason: one_time_purchase`;
+→ isSubscriptionRelated: false, notSubscriptionReason: one_time_purchase
+
+幣別判斷範例：
+
+範例 5：
+From: invoice+statements@mail.anthropic.com，內文 "Claude Pro $20.00 Paid"
+重點：Anthropic 是美國服務、Stripe 收據，裸 "$" 視為美金，不是台幣
+→ currency: USD
+
+範例 6：
+From: Apple，內文同時出現 "NT$ 690" 與 "$690/月"
+重點：有明確 NT$ 標記，以明確標記為準
+→ currency: TWD`;
 
 export function formatUserPrompt(email: SubscriptionEmail): string {
   return `From: ${email.from}
@@ -123,6 +142,9 @@ export async function llmExtract(
       schema: ExtractionSchema,
       system: SYSTEM_PROMPT,
       prompt: formatUserPrompt(email),
+      // Extraction wants reproducibility, not creativity: same email → same
+      // output, so eval scores are stable and currency doesn't flap run-to-run.
+      temperature: 0,
     });
     return object;
   } catch (err) {
