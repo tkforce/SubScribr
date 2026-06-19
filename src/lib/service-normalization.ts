@@ -18,7 +18,24 @@ export type ServiceDefinition = {
 export const SERVICE_REGISTRY: Record<string, ServiceDefinition> = {
   cursor: { id: "cursor", displayName: "Cursor", category: "ai", aliases: [] },
   chatgpt: { id: "chatgpt", displayName: "ChatGPT", category: "ai", aliases: [] },
-  claude: { id: "claude", displayName: "Claude", category: "ai", aliases: [] },
+  claude: {
+    id: "claude",
+    displayName: "Claude",
+    category: "ai",
+    // Seeded from real LLM rawServiceName output. The same Claude Pro
+    // subscription surfaces under several brand strings across Anthropic and
+    // Apple App Store receipts; without these they slugify to distinct ids and
+    // split into separate Subscription rows.
+    aliases: [
+      "claude",
+      "claude pro",
+      "claude pro - monthly",
+      "claude by anthropic",
+      "anthropic",
+      "anthropic, pbc",
+      "anthropic pbc",
+    ],
+  },
   netflix: { id: "netflix", displayName: "Netflix", category: "entertainment", aliases: [] },
   spotify: { id: "spotify", displayName: "Spotify", category: "entertainment", aliases: [] },
   youtube_premium: { id: "youtube_premium", displayName: "YouTube Premium", category: "entertainment", aliases: [] },
