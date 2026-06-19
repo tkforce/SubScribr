@@ -46,4 +46,20 @@ describe("normalizeServiceName", () => {
     expect(r.matched).toBe(false);
     expect(r.canonicalId).toBe("some-brand-new-service");
   });
+
+  // Seeded from real LLM rawServiceName output: the same Claude Pro subscription
+  // surfaces as "Claude Pro" (Anthropic/Apple receipts), "Anthropic", etc. Without
+  // aliases these slugify to distinct ids (claude-pro / anthropic) and split into
+  // separate Subscription rows. All variants must collapse to canonical "claude".
+  it.each([
+    "Claude",
+    "Claude Pro",
+    "Claude Pro - Monthly",
+    "Claude by Anthropic",
+    "Anthropic",
+    "Anthropic, PBC",
+    "Anthropic PBC",
+  ])("normalizes Claude variant %j to canonical 'claude'", (raw) => {
+    expect(normalizeServiceName(raw).canonicalId).toBe("claude");
+  });
 });
