@@ -101,8 +101,9 @@ export async function processEmail(
 export async function ingestEmails(
   accessToken: string,
   userId: string,
+  days: number,
 ): Promise<IngestStats> {
-  const query = buildSubscriptionQuery(60);
+  const query = buildSubscriptionQuery(days);
   const allIds = await listMessageIds(accessToken, query);
   const candidateCount = allIds.length;
 
