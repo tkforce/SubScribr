@@ -1,242 +1,105 @@
-"use client";
+import { Badge } from "@/components/ui/badge";
+import { Avatar } from "./avatar";
+import type { SubscriptionView } from "@/lib/subscriptions";
 
-import { useState, useTransition } from "react";
-import { getSubscriptionEmails } from "@/app/actions/emails";
-import { ingestSubscriptionEmails } from "@/app/actions/ingest";
-import type { IngestStats } from "@/lib/ingestion";
-import type { SubscriptionEmail } from "@/lib/gmail";
-import { Button } from "@/components/ui/button";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { ScrollArea } from "@/components/ui/scroll-area";
+const CYCLE_LABEL: Record<string, string> = {
+  monthly: "月繳",
+  yearly: "年繳",
+  quarterly: "季繳",
+  "one-time": "一次性",
+};
 
-export function SubscriptionList() {
-  const [emails, setEmails] = useState<SubscriptionEmail[]>([]);
-  const [selected, setSelected] = useState<SubscriptionEmail | null>(null);
-  const [isPending, startTransition] = useTransition();
-  const [isIngesting, startIngestTransition] = useTransition();
-  const [error, setError] = useState<string | null>(null);
-  const [hasFetched, setHasFetched] = useState(false);
-  const [ingestStats, setIngestStats] = useState<IngestStats | null>(null);
+const CATEGORY_LABEL: Record<string, string> = {
+  entertainment: "娛樂",
+  productivity: "生產力",
+  ai: "AI",
+  cloud: "雲端",
+  comm: "通訊",
+  other: "其他",
+};
 
-  const onFetch = () => {
-    setError(null);
-    startTransition(async () => {
-      try {
-        const data = await getSubscriptionEmails();
-        setEmails(data);
-        setHasFetched(true);
-      } catch (e) {
-        setError(e instanceof Error ? e.message : "Unknown error");
-      }
-    });
-  };
+function formatAmount(currency: string, amount: number): string {
+  if (currency === "TWD") return `NT$ ${Math.round(amount).toLocaleString()}`;
+  const symbol =
+    currency === "USD"
+      ? "US$"
+      : currency === "JPY"
+        ? "¥"
+        : currency === "EUR"
+          ? "€"
+          : `${currency} `;
+  return `${symbol}${amount.toLocaleString()}`;
+}
 
-  const onIngest = () => {
-    setError(null);
-    setIngestStats(null);
-    startIngestTransition(async () => {
-      try {
-        const stats = await ingestSubscriptionEmails();
-        setIngestStats(stats);
-      } catch (e) {
-        setError(e instanceof Error ? e.message : "Unknown error");
-      }
-    });
-  };
+function formatNextBilling(d: Date | null): string {
+  if (!d) return "—";
+  return `${d.getMonth() + 1}/${d.getDate()}`;
+}
+
+const GRID = "grid grid-cols-[34px_1.6fr_1fr_0.8fr_1fr] items-center gap-3.5";
+
+export function SubscriptionList({
+  subscriptions,
+}: {
+  subscriptions: SubscriptionView[];
+}) {
+  if (subscriptions.length === 0) {
+    return (
+      <p className="mt-8 rounded-md border border-dashed px-4 py-10 text-center text-sm text-muted-foreground">
+        目前沒有訂閱資料。點下方的「Ingest」掃描 Gmail，或前往 /dev 重新掃描。
+      </p>
+    );
+  }
 
   return (
-    <>
-      <div className="flex flex-wrap items-center gap-3">
-        <Button onClick={onFetch} disabled={isPending}>
-          {isPending ? "Fetching…" : "Fetch subscription emails (90d)"}
-        </Button>
-        <Button
-          variant="secondary"
-          onClick={onIngest}
-          disabled={isIngesting}
-        >
-          {isIngesting ? "Ingesting…" : "Ingest 90d to DB"}
-        </Button>
-        {emails.length > 0 && (
-          <>
-            <Button
-              variant="outline"
-              onClick={() => downloadJson(emails)}
-            >
-              Download JSON
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => downloadTxt(emails)}
-            >
-              Download TXT
-            </Button>
-          </>
-        )}
-        {hasFetched && !error && (
-          <span className="text-sm text-muted-foreground">
-            {emails.length} 封
-          </span>
-        )}
-        {error && <span className="text-sm text-destructive">{error}</span>}
-      </div>
-
-      {ingestStats && (
-        <div className="mt-4 rounded-md border bg-muted/40 p-3 text-sm">
-          <div className="font-medium">Ingest result</div>
-          <div className="mt-1 grid grid-cols-2 gap-x-6 gap-y-1 text-muted-foreground sm:grid-cols-5">
-            <div>candidate: <span className="text-foreground">{ingestStats.candidateCount}</span></div>
-            <div>skipped (already in DB): <span className="text-foreground">{ingestStats.skippedExistingCount}</span></div>
-            <div>blacklisted: <span className="text-foreground">{ingestStats.blacklistedCount}</span></div>
-            <div>not subscription: <span className="text-foreground">{ingestStats.notSubscriptionCount}</span></div>
-            <div>missing fields: <span className="text-foreground">{ingestStats.missingFieldsCount}</span></div>
-            <div>extract failed: <span className="text-foreground">{ingestStats.extractFailedCount}</span></div>
-            <div>ingested: <span className="text-foreground">{ingestStats.ingestedCount}</span></div>
-            <div>subscriptions upserted: <span className="text-foreground">{ingestStats.subscriptionsUpserted}</span></div>
-          </div>
-        </div>
-      )}
-
-      {emails.length > 0 && (
-        <div className="mt-6 rounded-md border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Subject</TableHead>
-                <TableHead className="w-[260px]">From</TableHead>
-                <TableHead className="w-[180px]">Date</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {emails.map((e) => (
-                <TableRow
-                  key={e.id}
-                  className="cursor-pointer"
-                  onClick={() => setSelected(e)}
-                >
-                  <TableCell className="font-medium">
-                    {e.subject || "(no subject)"}
-                  </TableCell>
-                  <TableCell className="max-w-[260px] truncate text-muted-foreground">
-                    {e.from}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {formatDate(e.date)}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-      )}
-
-      {hasFetched && emails.length === 0 && !error && (
-        <p className="mt-6 text-sm text-muted-foreground">
-          No subscription emails found in the past 90 days.
-        </p>
-      )}
-
-      <Dialog
-        open={!!selected}
-        onOpenChange={(open) => !open && setSelected(null)}
+    <div className="mt-6">
+      <div
+        className={`${GRID} px-3.5 pb-1.5 text-[11px] uppercase tracking-wide text-muted-foreground/60`}
       >
-        <DialogContent className="max-w-3xl">
-          <DialogHeader>
-            <DialogTitle className="pr-8">
-              {selected?.subject || "(no subject)"}
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-1 text-xs text-muted-foreground">
-            <div>
-              <span className="font-medium">From:</span> {selected?.from}
-            </div>
-            <div>
-              <span className="font-medium">Date:</span> {selected?.date}
-            </div>
-          </div>
-          <ScrollArea className="h-[60vh] rounded-md border bg-muted/30 p-4">
-            <pre className="whitespace-pre-wrap font-mono text-xs leading-relaxed">
-              {selected?.body || selected?.snippet || "(empty)"}
-            </pre>
-          </ScrollArea>
-        </DialogContent>
-      </Dialog>
-    </>
-  );
-}
-
-function formatDate(rfc2822: string): string {
-  if (!rfc2822) return "";
-  const d = new Date(rfc2822);
-  return isNaN(d.getTime()) ? rfc2822 : d.toLocaleString();
-}
-
-function timestamp(): string {
-  const d = new Date();
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}`;
-}
-
-function triggerDownload(content: string, filename: string, mime: string) {
-  const blob = new Blob([content], { type: mime });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
-}
-
-function downloadJson(emails: SubscriptionEmail[]) {
-  const payload = {
-    fetchedAt: new Date().toISOString(),
-    count: emails.length,
-    emails,
-  };
-  triggerDownload(
-    JSON.stringify(payload, null, 2),
-    `subscribr-emails-${timestamp()}.json`,
-    "application/json",
-  );
-}
-
-function downloadTxt(emails: SubscriptionEmail[]) {
-  const sep = "\n" + "=".repeat(80) + "\n";
-  const blocks = emails.map((e, i) =>
-    [
-      `[${i + 1}/${emails.length}] id=${e.id}`,
-      `From:    ${e.from}`,
-      `Subject: ${e.subject}`,
-      `Date:    ${e.date}`,
-      `Snippet: ${e.snippet}`,
-      "",
-      "--- BODY ---",
-      e.body || "(no plain text body)",
-    ].join("\n"),
-  );
-  const content =
-    `# SubScribr export · ${new Date().toISOString()} · ${emails.length} emails` +
-    sep +
-    blocks.join(sep) +
-    sep;
-  triggerDownload(
-    content,
-    `subscribr-emails-${timestamp()}.txt`,
-    "text/plain;charset=utf-8",
+        <span />
+        <span>服務</span>
+        <span>金額</span>
+        <span>週期</span>
+        <span className="text-right">下次扣款</span>
+      </div>
+      <ul className="flex flex-col gap-2">
+        {subscriptions.map((s) => {
+          const name = s.displayName ?? s.serviceName;
+          return (
+            <li
+              key={s.id}
+              className={`${GRID} rounded-lg border bg-card/40 px-3.5 py-2.5 transition-colors hover:bg-muted/50`}
+            >
+              <Avatar name={name} />
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="truncate text-sm font-semibold">{name}</span>
+                  {s.isTrial && <Badge variant="secondary">試用</Badge>}
+                </div>
+                <span className="text-xs text-muted-foreground">
+                  {CATEGORY_LABEL[s.category] ?? s.category}
+                </span>
+              </div>
+              <div>
+                <div className="text-sm font-semibold tabular-nums">
+                  {formatAmount(s.currency, s.amount)}
+                </div>
+                {s.currency !== "TWD" && (
+                  <div className="text-[11px] text-muted-foreground">
+                    NT$ {Math.round(s.amountInTwd).toLocaleString()}
+                  </div>
+                )}
+              </div>
+              <span className="text-xs text-muted-foreground">
+                {CYCLE_LABEL[s.cycle] ?? s.cycle}
+              </span>
+              <span className="text-right text-xs text-muted-foreground">
+                {formatNextBilling(s.nextBillingDate)}
+              </span>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
   );
 }

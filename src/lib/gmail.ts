@@ -211,8 +211,9 @@ export async function fetchMessagesByIds(
 
 export async function fetchSubscriptionEmails(
   accessToken: string,
+  days: number,
 ): Promise<SubscriptionEmail[]> {
-  const query = buildSubscriptionQuery(60);
+  const query = buildSubscriptionQuery(days);
   const ids = await listMessageIds(accessToken, query);
   return fetchMessagesByIds(accessToken, ids);
 }
