@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { ingestSubscriptionEmails } from "@/app/actions/ingest";
 import { Button } from "@/components/ui/button";
 import type { IngestStats } from "@/lib/ingestion";
+import { INGEST_WINDOW_DAYS } from "@/lib/constants";
 
 export function IngestButton() {
   const [isIngesting, startTransition] = useTransition();
@@ -30,7 +31,7 @@ export function IngestButton() {
     <div className="mt-10 border-t pt-6">
       <div className="flex flex-wrap items-center gap-3">
         <Button variant="secondary" onClick={onIngest} disabled={isIngesting}>
-          {isIngesting ? "Ingesting…" : "Ingest 90d to DB"}
+          {isIngesting ? "Ingesting…" : `Ingest ${INGEST_WINDOW_DAYS}d to DB`}
         </Button>
         {stats && (
           <span className="text-sm text-muted-foreground">

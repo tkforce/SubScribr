@@ -2,6 +2,7 @@
 
 import { auth } from "@/auth";
 import { ingestEmails, type IngestStats } from "@/lib/ingestion";
+import { INGEST_WINDOW_DAYS } from "@/lib/constants";
 
 export async function ingestSubscriptionEmails(): Promise<IngestStats> {
   const session = await auth();
@@ -14,5 +15,5 @@ export async function ingestSubscriptionEmails(): Promise<IngestStats> {
   if (!session.userId)
     throw new Error("No DB user id on session — sign out and sign in again.");
 
-  return ingestEmails(session.access_token, session.userId);
+  return ingestEmails(session.access_token, session.userId, INGEST_WINDOW_DAYS);
 }

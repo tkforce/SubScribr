@@ -21,6 +21,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { INGEST_WINDOW_DAYS } from "@/lib/constants";
 
 export function DevTools() {
   const [emails, setEmails] = useState<SubscriptionEmail[]>([]);
@@ -61,14 +62,16 @@ export function DevTools() {
     <>
       <div className="flex flex-wrap items-center gap-3">
         <Button onClick={onFetch} disabled={isPending}>
-          {isPending ? "Fetching…" : "Fetch subscription emails (90d)"}
+          {isPending
+            ? "Fetching…"
+            : `Fetch subscription emails (${INGEST_WINDOW_DAYS}d)`}
         </Button>
         <Button
           variant="secondary"
           onClick={onIngest}
           disabled={isIngesting}
         >
-          {isIngesting ? "Ingesting…" : "Ingest 90d to DB"}
+          {isIngesting ? "Ingesting…" : `Ingest ${INGEST_WINDOW_DAYS}d to DB`}
         </Button>
         {emails.length > 0 && (
           <>
