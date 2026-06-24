@@ -2,6 +2,7 @@
 
 import { auth } from "@/auth";
 import { fetchSubscriptionEmails, type SubscriptionEmail } from "@/lib/gmail";
+import { INGEST_WINDOW_DAYS } from "@/lib/constants";
 
 export async function getSubscriptionEmails(): Promise<SubscriptionEmail[]> {
   const session = await auth();
@@ -11,5 +12,5 @@ export async function getSubscriptionEmails(): Promise<SubscriptionEmail[]> {
   }
   if (!session.access_token)
     throw new Error("No Gmail access token available.");
-  return fetchSubscriptionEmails(session.access_token);
+  return fetchSubscriptionEmails(session.access_token, INGEST_WINDOW_DAYS);
 }
