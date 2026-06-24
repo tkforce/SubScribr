@@ -50,3 +50,6 @@ next-env.d.ts
 /sampleEmail/
 /docs/extractions/*
 !/docs/extractions/PROMPT_LOG.md
+!/docs/extractions/README.md
+
+.superpowers/
