@@ -1,3 +1,5 @@
+import { db } from "@/lib/db";
+
 // ---------- Pure computation ----------
 
 export type TrendEvent = {
@@ -62,4 +64,54 @@ export function computeMonthlySpend(
     month: k,
     totalTwd: Math.round(buckets.get(k) ?? 0),
   }));
+}
+
+// ---------- I/O orchestrator ----------
+
+// Longest cycle is yearly: an event up to 12 months before the window start
+// can still cover months inside the window, so the query bound reaches back
+// windowStart − 12 months. Hidden subscriptions are excluded entirely;
+// cancelled ones still count — their covered months were real spend.
+export async function getMonthlyTrend(
+  userId: string,
+  monthsBack = 6,
+  now: Date = new Date(),
+): Promise<MonthlyTrendPoint[]> {
+  const hidden = await db.subscription.findMany({
+    where: { userId, status: "hidden" },
+    select: { serviceName: true },
+  });
+  const hiddenNames = hidden.map((h) => h.serviceName);
+
+  const queryStart = new Date(
+    now.getFullYear(),
+    now.getMonth() - (monthsBack - 1) - 12,
+    1,
+  );
+
+  const rows = await db.billingEvent.findMany({
+    where: {
+      userId,
+      emailSignalType: "billing",
+      emailReceivedAt: { gte: queryStart },
+      ...(hiddenNames.length > 0
+        ? { serviceName: { notIn: hiddenNames } }
+        : {}),
+    },
+    select: {
+      amountInTwd: true,
+      cycle: true,
+      emailSignalType: true,
+      emailReceivedAt: true,
+    },
+  });
+
+  const events: TrendEvent[] = rows.map((r) => ({
+    amountInTwd: Number(r.amountInTwd),
+    cycle: r.cycle,
+    emailSignalType: r.emailSignalType,
+    emailReceivedAt: r.emailReceivedAt,
+  }));
+
+  return computeMonthlySpend(events, monthsBack, now);
 }
