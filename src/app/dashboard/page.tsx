@@ -3,17 +3,22 @@ import { auth } from "@/auth";
 import { signOutAction } from "@/app/actions/auth";
 import { Button } from "@/components/ui/button";
 import { getActiveSubscriptions, computeOverview } from "@/lib/subscriptions";
+import { getMonthlyTrend } from "@/lib/monthly-trend";
 import { OverviewCard } from "./overview-card";
 import { SubscriptionList } from "./subscription-list";
 import { IngestButton } from "./ingest-button";
+import { TrendChart } from "./trend-chart";
 
 export default async function DashboardPage() {
   const session = await auth();
   if (!session?.user) redirect("/");
 
-  const subscriptions = session.userId
-    ? await getActiveSubscriptions(session.userId)
-    : [];
+  const [subscriptions, trendPoints] = session.userId
+    ? await Promise.all([
+        getActiveSubscriptions(session.userId),
+        getMonthlyTrend(session.userId),
+      ])
+    : [[], []];
   const overview = computeOverview(subscriptions);
 
   return (
@@ -42,6 +47,7 @@ export default async function DashboardPage() {
         totalMonthlyTwd={overview.totalMonthlyTwd}
         activeCount={overview.activeCount}
       />
+      <TrendChart points={trendPoints} />
       <SubscriptionList subscriptions={subscriptions} />
       <IngestButton />
     </main>
