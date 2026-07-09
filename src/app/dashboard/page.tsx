@@ -4,22 +4,32 @@ import { signOutAction } from "@/app/actions/auth";
 import { Button } from "@/components/ui/button";
 import { getActiveSubscriptions, computeOverview } from "@/lib/subscriptions";
 import { getMonthlyTrend } from "@/lib/monthly-trend";
+import { db } from "@/lib/db";
+import { isIngestStale, formatLastSynced } from "@/lib/ingest-freshness";
 import { OverviewCard } from "./overview-card";
 import { SubscriptionList } from "./subscription-list";
 import { IngestButton } from "./ingest-button";
 import { TrendChart } from "./trend-chart";
+import { AutoSync } from "./auto-sync";
 
 export default async function DashboardPage() {
   const session = await auth();
   if (!session?.user) redirect("/");
 
-  const [subscriptions, trendPoints] = session.userId
+  const [subscriptions, trendPoints, user] = session.userId
     ? await Promise.all([
         getActiveSubscriptions(session.userId),
         getMonthlyTrend(session.userId),
+        db.user.findUnique({
+          where: { id: session.userId },
+          select: { lastIngestAt: true },
+        }),
       ])
-    : [[], []];
+    : [[], [], null];
   const overview = computeOverview(subscriptions);
+
+  const lastIngestAt = user?.lastIngestAt ?? null;
+  const now = new Date();
 
   return (
     <main className="mx-auto w-full max-w-5xl flex-1 px-6 py-12">
@@ -29,6 +39,10 @@ export default async function DashboardPage() {
           <p className="text-sm text-muted-foreground">
             Signed in as {session.user.email}
           </p>
+          <AutoSync
+            stale={session.userId ? isIngestStale(lastIngestAt, now) : false}
+            lastSyncedLabel={formatLastSynced(lastIngestAt, now)}
+          />
         </div>
         <form action={signOutAction}>
           <Button variant="outline" type="submit">
