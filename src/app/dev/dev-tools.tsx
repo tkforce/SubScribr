@@ -50,8 +50,8 @@ export function DevTools() {
     setIngestStats(null);
     startIngestTransition(async () => {
       try {
-        const stats = await ingestSubscriptionEmails();
-        setIngestStats(stats);
+        const result = await ingestSubscriptionEmails({ force: true });
+        if (!result.skipped) setIngestStats(result.stats);
       } catch (e) {
         setError(e instanceof Error ? e.message : "Unknown error");
       }

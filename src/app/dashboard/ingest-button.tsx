@@ -18,8 +18,8 @@ export function IngestButton() {
     setStats(null);
     startTransition(async () => {
       try {
-        const result = await ingestSubscriptionEmails();
-        setStats(result);
+        const result = await ingestSubscriptionEmails({ force: true });
+        if (!result.skipped) setStats(result.stats);
         router.refresh();
       } catch (e) {
         setError(e instanceof Error ? e.message : "Unknown error");

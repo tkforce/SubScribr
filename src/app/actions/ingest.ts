@@ -30,7 +30,7 @@ export async function ingestSubscriptionEmails(
     select: { lastIngestAt: true },
   });
   if (
-    !shouldRunIngest(options.force ?? false, user?.lastIngestAt ?? null, new Date())
+    !shouldRunIngest(options?.force ?? false, user?.lastIngestAt ?? null, new Date())
   ) {
     return { skipped: true };
   }
