@@ -36,7 +36,11 @@ export function AutoSync({
   }, [stale, router]);
 
   return (
-    <p className="flex items-center gap-2 text-xs text-muted-foreground">
+    <p
+      role="status"
+      aria-live="polite"
+      className="flex items-center gap-2 text-xs text-muted-foreground"
+    >
       {isSyncing ? (
         <>
           <Loader2 className="h-3 w-3 animate-spin" aria-hidden />
