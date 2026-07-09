@@ -1,10 +1,18 @@
 "use server";
 
 import { auth } from "@/auth";
+import { db } from "@/lib/db";
 import { ingestEmails, type IngestStats } from "@/lib/ingestion";
+import { shouldRunIngest } from "@/lib/ingest-freshness";
 import { INGEST_WINDOW_DAYS } from "@/lib/constants";
 
-export async function ingestSubscriptionEmails(): Promise<IngestStats> {
+export type IngestResult =
+  | { skipped: true }
+  | { skipped: false; stats: IngestStats };
+
+export async function ingestSubscriptionEmails(
+  options: { force?: boolean } = {},
+): Promise<IngestResult> {
   const session = await auth();
   if (!session?.user) throw new Error("Unauthenticated");
   if (session.error === "RefreshAccessTokenError") {
@@ -15,5 +23,22 @@ export async function ingestSubscriptionEmails(): Promise<IngestStats> {
   if (!session.userId)
     throw new Error("No DB user id on session — sign out and sign in again.");
 
-  return ingestEmails(session.access_token, session.userId, INGEST_WINDOW_DAYS);
+  // Freshness is re-checked server-side (not only in the AutoSync client) so
+  // multiple tabs or rapid navigations can't stack redundant ingests.
+  const user = await db.user.findUnique({
+    where: { id: session.userId },
+    select: { lastIngestAt: true },
+  });
+  if (
+    !shouldRunIngest(options.force ?? false, user?.lastIngestAt ?? null, new Date())
+  ) {
+    return { skipped: true };
+  }
+
+  const stats = await ingestEmails(
+    session.access_token,
+    session.userId,
+    INGEST_WINDOW_DAYS,
+  );
+  return { skipped: false, stats };
 }
