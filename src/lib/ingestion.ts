@@ -167,6 +167,13 @@ export async function ingestEmails(
     affected,
   );
 
+  // Sync watermark, not a data watermark: stamped even when nothing new was
+  // found, so the dashboard's staleness check reflects the last attempt.
+  await db.user.update({
+    where: { id: userId },
+    data: { lastIngestAt: new Date() },
+  });
+
   return {
     candidateCount,
     skippedExistingCount,
