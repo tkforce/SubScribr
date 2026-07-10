@@ -51,25 +51,25 @@ describe("formatLastSynced", () => {
 
   it("handles under a minute", () => {
     expect(formatLastSynced(new Date("2026-07-09T11:59:30Z"), now)).toBe(
-      "Last synced just now",
+      "Last synced: just now",
     );
   });
 
   it("handles minutes", () => {
     expect(formatLastSynced(new Date("2026-07-09T11:55:00Z"), now)).toBe(
-      "Last synced 5m ago",
+      "Last synced: 5m ago",
     );
   });
 
   it("handles hours", () => {
     expect(formatLastSynced(new Date("2026-07-09T09:00:00Z"), now)).toBe(
-      "Last synced 3h ago",
+      "Last synced: 3h ago",
     );
   });
 
   it("handles days", () => {
     expect(formatLastSynced(new Date("2026-07-07T11:00:00Z"), now)).toBe(
-      "Last synced 2d ago",
+      "Last synced: 2d ago",
     );
   });
 });
