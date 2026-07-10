@@ -69,6 +69,10 @@ lastIngestAt DateTime?
 - Auto-refresh 使用者設定 / toggle。
 - Cron 排程。
 
+## 2026-07-10 修訂
+
+- Dashboard 的 `Ingest 90d to DB` 按鈕移除（與手動同步重複）；手動同步改為「Last synced」label 旁的 refresh icon button（`aria-label="Sync now"`，`force: true`，同步中 disabled）。dev 頁（`/dev`）的 ingest 按鈕保留，因為它顯示完整 stats breakdown。
+
 ## 參數決策紀錄
 
 - 門檻 12 小時：訂閱信頻率低，不需要更即時；調低成本也幾乎一樣，只是快速反覆進頁面會多幾次背景 Gmail list。單一常數，日後可調。

@@ -8,7 +8,6 @@ import { db } from "@/lib/db";
 import { isIngestStale, formatLastSynced } from "@/lib/ingest-freshness";
 import { OverviewCard } from "./overview-card";
 import { SubscriptionList } from "./subscription-list";
-import { IngestButton } from "./ingest-button";
 import { TrendChart } from "./trend-chart";
 import { AutoSync } from "./auto-sync";
 
@@ -63,7 +62,6 @@ export default async function DashboardPage() {
       />
       <TrendChart points={trendPoints} />
       <SubscriptionList subscriptions={subscriptions} />
-      <IngestButton />
     </main>
   );
 }
