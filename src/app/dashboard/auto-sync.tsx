@@ -70,6 +70,7 @@ export function AutoSync({
       </p>
       <Button
         variant="ghost"
+        className="cursor-pointer rounded-full p-1 text-muted-foreground hover:text-foreground"
         size="icon-xs"
         aria-label="Sync now"
         disabled={isSyncing}
