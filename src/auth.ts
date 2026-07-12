@@ -11,7 +11,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         params: {
           scope: `openid email profile ${GMAIL_SCOPE}`,
           access_type: "offline",
-          // prompt: "consent",
+          // Google only issues a refresh_token on consent; without forcing it,
+          // any re-login leaves the JWT with no way to renew the access token.
+          prompt: "consent",
         },
       },
     }),
@@ -21,7 +23,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     async jwt({ token, account, profile }) {
       if (account) {
         token.access_token = account.access_token;
-        token.refresh_token = account.refresh_token;
+        // Keep the existing refresh_token when Google omits it from the response
+        token.refresh_token = account.refresh_token ?? token.refresh_token;
         token.expires_at = account.expires_at;
 
         const email = profile?.email ?? token.email;
@@ -42,7 +45,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         return token;
       }
 
-      if (!token.refresh_token) return token;
+      if (!token.refresh_token) {
+        token.error = "RefreshAccessTokenError";
+        return token;
+      }
 
       try {
         const res = await fetch("https://oauth2.googleapis.com/token", {
