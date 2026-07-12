@@ -66,6 +66,26 @@ export function computeMonthlySpend(
   }));
 }
 
+export type MonthDelta = {
+  deltaTwd: number;
+  pctChange: number | null; // null when the previous month had no spend
+};
+
+// Month-over-month change from the last two trend points. Null when there is
+// nothing to compare: fewer than two points, or no spend in either month.
+export function computeMonthDelta(
+  points: MonthlyTrendPoint[],
+): MonthDelta | null {
+  if (points.length < 2) return null;
+  const current = points[points.length - 1].totalTwd;
+  const previous = points[points.length - 2].totalTwd;
+  if (current === 0 && previous === 0) return null;
+  return {
+    deltaTwd: current - previous,
+    pctChange: previous === 0 ? null : (current - previous) / previous,
+  };
+}
+
 // ---------- I/O orchestrator ----------
 
 // Longest cycle is yearly: an event up to 12 months before the window start

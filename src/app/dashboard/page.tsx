@@ -2,11 +2,12 @@ import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { signOutAction } from "@/app/actions/auth";
 import { Button } from "@/components/ui/button";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { getActiveSubscriptions, computeOverview } from "@/lib/subscriptions";
-import { getMonthlyTrend } from "@/lib/monthly-trend";
+import { computeMonthDelta, getMonthlyTrend } from "@/lib/monthly-trend";
 import { db } from "@/lib/db";
 import { isIngestStale, formatLastSynced } from "@/lib/ingest-freshness";
-import { OverviewCard } from "./overview-card";
+import { StatRow } from "./stat-row";
 import { SubscriptionList } from "./subscription-list";
 import { TrendChart } from "./trend-chart";
 import { AutoSync } from "./auto-sync";
@@ -34,7 +35,7 @@ export default async function DashboardPage() {
     <main className="mx-auto w-full max-w-5xl flex-1 px-6 py-12">
       <header className="mb-8 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
+          <h1 className="text-3xl font-semibold tracking-tight">Dashboard</h1>
           <p className="text-sm text-muted-foreground">
             Signed in as {session.user.email}
           </p>
@@ -43,11 +44,14 @@ export default async function DashboardPage() {
             lastSyncedLabel={formatLastSynced(lastIngestAt, now)}
           />
         </div>
-        <form action={signOutAction}>
-          <Button variant="outline" type="submit">
-            Sign out
-          </Button>
-        </form>
+        <div className="flex items-center gap-2">
+          <ThemeToggle />
+          <form action={signOutAction}>
+            <Button variant="outline" type="submit">
+              Sign out
+            </Button>
+          </form>
+        </div>
       </header>
 
       {session.error === "RefreshAccessTokenError" && (
@@ -56,12 +60,13 @@ export default async function DashboardPage() {
         </p>
       )}
 
-      <OverviewCard
+      <StatRow
         totalMonthlyTwd={overview.totalMonthlyTwd}
         activeCount={overview.activeCount}
+        delta={computeMonthDelta(trendPoints)}
       />
       <TrendChart points={trendPoints} />
-      <SubscriptionList subscriptions={subscriptions} />
+      <SubscriptionList subscriptions={subscriptions} now={now} />
     </main>
   );
 }
