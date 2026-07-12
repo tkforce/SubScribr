@@ -1,5 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { monthlyAmountTwd, computeOverview } from "./subscriptions";
+import {
+  monthlyAmountTwd,
+  computeOverview,
+  upcomingBilling,
+} from "./subscriptions";
 
 describe("monthlyAmountTwd", () => {
   it("monthly returns amount as-is", () => {
@@ -34,5 +38,46 @@ describe("computeOverview", () => {
   it("rounds the total", () => {
     const subs = [{ cycle: "yearly", amountInTwd: 1000 }]; // 83.33
     expect(computeOverview(subs)).toEqual({ totalMonthlyTwd: 83, activeCount: 1 });
+  });
+});
+
+describe("upcomingBilling", () => {
+  const NOW = new Date(2026, 6, 11, 14, 30); // 2026-07-11 14:30
+
+  it("returns 今天 for a billing later the same day", () => {
+    expect(upcomingBilling(new Date(2026, 6, 11, 23, 0), NOW)).toEqual({
+      days: 0,
+      label: "今天扣款",
+    });
+  });
+
+  it("returns 明天 even when less than 24h away across midnight", () => {
+    expect(upcomingBilling(new Date(2026, 6, 12, 1, 0), NOW)).toEqual({
+      days: 1,
+      label: "明天扣款",
+    });
+  });
+
+  it("returns N 天後 up to 7 days out", () => {
+    expect(upcomingBilling(new Date(2026, 6, 15), NOW)).toEqual({
+      days: 4,
+      label: "4 天後扣款",
+    });
+    expect(upcomingBilling(new Date(2026, 6, 18), NOW)).toEqual({
+      days: 7,
+      label: "7 天後扣款",
+    });
+  });
+
+  it("returns null beyond 7 days", () => {
+    expect(upcomingBilling(new Date(2026, 6, 19), NOW)).toBeNull();
+  });
+
+  it("returns null for past dates (stale data, not a warning)", () => {
+    expect(upcomingBilling(new Date(2026, 6, 10), NOW)).toBeNull();
+  });
+
+  it("returns null when there is no next billing date", () => {
+    expect(upcomingBilling(null, NOW)).toBeNull();
   });
 });

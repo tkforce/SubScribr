@@ -1,5 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { computeMonthlySpend, type TrendEvent } from "./monthly-trend";
+import {
+  computeMonthDelta,
+  computeMonthlySpend,
+  type TrendEvent,
+} from "./monthly-trend";
 
 // now 固定在 2026-07-15，6 個月窗 = 2026-02 .. 2026-07
 const NOW = new Date(2026, 6, 15);
@@ -156,5 +160,45 @@ describe("computeMonthlySpend", () => {
       NOW,
     );
     expect(points.find((p) => p.month === "2026-07")?.totalTwd).toBe(473); // round(390 + 83.33)
+  });
+});
+
+describe("computeMonthDelta", () => {
+  it("computes delta and pct between the last two months", () => {
+    const delta = computeMonthDelta([
+      { month: "2026-06", totalTwd: 400 },
+      { month: "2026-07", totalTwd: 500 },
+    ]);
+    expect(delta).toEqual({ deltaTwd: 100, pctChange: 0.25 });
+  });
+
+  it("computes a negative delta when spend decreased", () => {
+    const delta = computeMonthDelta([
+      { month: "2026-06", totalTwd: 500 },
+      { month: "2026-07", totalTwd: 400 },
+    ]);
+    expect(delta).toEqual({ deltaTwd: -100, pctChange: -0.2 });
+  });
+
+  it("returns null pct when the previous month had no spend", () => {
+    const delta = computeMonthDelta([
+      { month: "2026-06", totalTwd: 0 },
+      { month: "2026-07", totalTwd: 400 },
+    ]);
+    expect(delta).toEqual({ deltaTwd: 400, pctChange: null });
+  });
+
+  it("returns null when both months have no spend", () => {
+    expect(
+      computeMonthDelta([
+        { month: "2026-06", totalTwd: 0 },
+        { month: "2026-07", totalTwd: 0 },
+      ]),
+    ).toBeNull();
+  });
+
+  it("returns null with fewer than two points", () => {
+    expect(computeMonthDelta([])).toBeNull();
+    expect(computeMonthDelta([{ month: "2026-07", totalTwd: 400 }])).toBeNull();
   });
 });
