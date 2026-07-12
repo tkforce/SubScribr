@@ -1,13 +1,14 @@
 import Link from "next/link";
 import { auth } from "@/auth";
 import { signInWithGoogle, signOutAction } from "@/app/actions/auth";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 export default async function Home() {
   const session = await auth();
   const user = session?.user;
 
   return (
-    <div className="relative flex flex-1 flex-col overflow-hidden bg-white text-zinc-900 dark:bg-[#0a0a0f] dark:text-zinc-100">
+    <div className="relative flex flex-1 flex-col overflow-hidden text-foreground">
       {/* Decorative background */}
       <div className="pointer-events-none absolute inset-0 -z-10">
         <div className="absolute -top-32 left-1/2 h-[520px] w-[520px] -translate-x-1/2 rounded-full bg-gradient-to-br from-indigo-400/30 via-fuchsia-400/20 to-transparent blur-3xl dark:from-indigo-500/20 dark:via-fuchsia-500/10" />
@@ -55,6 +56,7 @@ export default async function Home() {
           </a>
         </nav>
         <div className="flex items-center gap-3">
+          <ThemeToggle />
           {user ? (
             <>
               <Link
@@ -127,8 +129,8 @@ export default async function Home() {
 
           {/* Hero preview card */}
           <div className="relative mx-auto mt-20 max-w-5xl">
-            <div className="rounded-2xl border border-zinc-200 bg-white/80 p-2 shadow-2xl shadow-zinc-900/10 backdrop-blur-xl dark:border-white/10 dark:bg-white/[0.03] dark:shadow-black/40">
-              <div className="rounded-xl bg-zinc-50 p-6 dark:bg-zinc-950/60 sm:p-8">
+            <div className="rounded-2xl border border-white/60 bg-white/60 p-2 shadow-2xl shadow-zinc-900/10 backdrop-blur-xl dark:border-white/10 dark:bg-white/[0.03] dark:shadow-black/40">
+              <div className="rounded-xl bg-white/40 p-6 dark:bg-zinc-950/50 sm:p-8">
                 <div className="grid gap-6 lg:grid-cols-5">
                   {/* Left: This Week Needs Attention */}
                   <div className="lg:col-span-2">
@@ -256,13 +258,12 @@ export default async function Home() {
                 </div>
               </div>
             </div>
-            <div className="pointer-events-none absolute -inset-x-8 -bottom-8 -z-10 h-32 bg-gradient-to-t from-white to-transparent dark:from-[#0a0a0f]" />
           </div>
         </section>
 
         {/* Streaming-progress strip */}
         <section className="mx-auto w-full max-w-5xl px-6 pb-20 sm:px-8">
-          <div className="rounded-2xl border border-zinc-200 bg-white/70 p-6 shadow-sm backdrop-blur dark:border-white/10 dark:bg-white/[0.03] sm:p-8">
+          <div className="rounded-2xl border border-white/60 bg-white/60 p-6 shadow-sm backdrop-blur-xl dark:border-white/10 dark:bg-white/[0.03] sm:p-8">
             <p className="text-sm font-medium uppercase tracking-wider text-zinc-500">
               First-time onboarding · streaming progress
             </p>
@@ -299,7 +300,7 @@ export default async function Home() {
             {features.map((f) => (
               <div
                 key={f.title}
-                className="group relative overflow-hidden rounded-2xl border border-zinc-200 bg-white p-6 transition hover:-translate-y-0.5 hover:shadow-xl hover:shadow-zinc-900/5 dark:border-white/10 dark:bg-white/[0.03] dark:hover:shadow-black/30"
+                className="group relative overflow-hidden rounded-2xl border border-white/60 bg-white/60 p-6 backdrop-blur-xl transition hover:-translate-y-0.5 hover:shadow-xl hover:shadow-zinc-900/5 dark:border-white/10 dark:bg-white/[0.03] dark:hover:shadow-black/30"
               >
                 <div
                   className={`inline-flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br ${f.color} text-white shadow-md`}
@@ -332,7 +333,7 @@ export default async function Home() {
           <div className="mt-16 grid gap-8 md:grid-cols-3">
             {steps.map((s, i) => (
               <div key={s.title} className="relative">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full border border-zinc-200 bg-white text-sm font-semibold dark:border-white/10 dark:bg-white/[0.03]">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full border border-white/60 bg-white/60 text-sm font-semibold backdrop-blur dark:border-white/10 dark:bg-white/[0.03]">
                   {i + 1}
                 </div>
                 <h3 className="mt-5 text-lg font-semibold">{s.title}</h3>
@@ -349,7 +350,7 @@ export default async function Home() {
           id="accuracy"
           className="mx-auto w-full max-w-6xl px-6 py-20 sm:px-8 sm:py-28"
         >
-          <div className="grid gap-10 rounded-3xl border border-zinc-200 bg-white p-8 dark:border-white/10 dark:bg-white/[0.02] sm:p-12 lg:grid-cols-2 lg:items-center">
+          <div className="grid gap-10 rounded-3xl border border-white/60 bg-white/60 p-8 backdrop-blur-xl dark:border-white/10 dark:bg-white/[0.02] sm:p-12 lg:grid-cols-2 lg:items-center">
             <div>
               <p className="text-sm font-semibold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
                 Trust, but verify
@@ -384,7 +385,7 @@ export default async function Home() {
                 </svg>
               </a>
             </div>
-            <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-6 dark:border-white/10 dark:bg-zinc-950/60">
+            <div className="rounded-2xl border border-white/60 bg-white/50 p-6 dark:border-white/10 dark:bg-zinc-950/50">
               <div className="flex items-center justify-between">
                 <p className="text-xs font-medium uppercase tracking-wider text-zinc-500">
                   Eval · prompt v0.4
