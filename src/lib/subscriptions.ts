@@ -39,6 +39,30 @@ export function computeOverview(
   return { totalMonthlyTwd: Math.round(total), activeCount: subs.length };
 }
 
+export type UpcomingBilling = {
+  days: number;
+  label: string;
+};
+
+// Calendar-day distance to the next billing, when it lands within 7 days.
+// Past dates are stale data, not an imminent charge — they return null.
+export function upcomingBilling(
+  nextBillingDate: Date | null,
+  now: Date,
+): UpcomingBilling | null {
+  if (!nextBillingDate) return null;
+  const msPerDay = 24 * 60 * 60 * 1000;
+  const startOfDay = (d: Date) =>
+    new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+  const days = Math.round(
+    (startOfDay(nextBillingDate) - startOfDay(now)) / msPerDay,
+  );
+  if (days < 0 || days > 7) return null;
+  const label =
+    days === 0 ? "今天扣款" : days === 1 ? "明天扣款" : `${days} 天後扣款`;
+  return { days, label };
+}
+
 // Active subscriptions for a user, Decimal→number, sorted by monthly spend desc.
 export async function getActiveSubscriptions(
   userId: string,

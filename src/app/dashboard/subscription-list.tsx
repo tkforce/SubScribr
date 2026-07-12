@@ -1,6 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 import { Avatar } from "./avatar";
-import type { SubscriptionView } from "@/lib/subscriptions";
+import { upcomingBilling, type SubscriptionView } from "@/lib/subscriptions";
 
 const CYCLE_LABEL: Record<string, string> = {
   monthly: "月繳",
@@ -16,6 +16,17 @@ const CATEGORY_LABEL: Record<string, string> = {
   cloud: "雲端",
   comm: "通訊",
   other: "其他",
+};
+
+// Tinted pill per category; label text carries identity, color is reinforcement.
+const CATEGORY_BADGE: Record<string, string> = {
+  entertainment: "bg-rose-100 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300",
+  productivity:
+    "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300",
+  ai: "bg-violet-100 text-violet-700 dark:bg-violet-500/15 dark:text-violet-300",
+  cloud: "bg-sky-100 text-sky-700 dark:bg-sky-500/15 dark:text-sky-300",
+  comm: "bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-300",
+  other: "bg-slate-100 text-slate-600 dark:bg-slate-500/15 dark:text-slate-300",
 };
 
 function formatAmount(currency: string, amount: number): string {
@@ -40,12 +51,14 @@ const GRID = "grid grid-cols-[34px_1.6fr_1fr_0.8fr_1fr] items-center gap-3.5";
 
 export function SubscriptionList({
   subscriptions,
+  now,
 }: {
   subscriptions: SubscriptionView[];
+  now: Date;
 }) {
   if (subscriptions.length === 0) {
     return (
-      <p className="mt-8 rounded-md border border-dashed px-4 py-10 text-center text-sm text-muted-foreground">
+      <p className="mt-8 rounded-2xl border border-dashed bg-card/40 px-4 py-10 text-center text-sm text-muted-foreground backdrop-blur-xl">
         目前沒有訂閱資料。點下方的「Ingest」掃描 Gmail，或前往 /dev 重新掃描。
       </p>
     );
@@ -65,10 +78,11 @@ export function SubscriptionList({
       <ul className="flex flex-col gap-2">
         {subscriptions.map((s) => {
           const name = s.displayName ?? s.serviceName;
+          const upcoming = upcomingBilling(s.nextBillingDate, now);
           return (
             <li
               key={s.id}
-              className={`${GRID} rounded-lg border bg-card/40 px-3.5 py-2.5 transition-colors hover:bg-muted/50`}
+              className={`${GRID} glass rounded-xl bg-card/50 px-3.5 py-2.5 transition-colors hover:bg-card/90`}
             >
               <Avatar name={name} />
               <div className="min-w-0">
@@ -76,7 +90,9 @@ export function SubscriptionList({
                   <span className="truncate text-sm font-semibold">{name}</span>
                   {s.isTrial && <Badge variant="secondary">試用</Badge>}
                 </div>
-                <span className="text-xs text-muted-foreground">
+                <span
+                  className={`mt-0.5 inline-flex w-fit items-center rounded-full px-2 py-0.5 text-[11px] font-medium ${CATEGORY_BADGE[s.category] ?? CATEGORY_BADGE.other}`}
+                >
                   {CATEGORY_LABEL[s.category] ?? s.category}
                 </span>
               </div>
@@ -93,8 +109,16 @@ export function SubscriptionList({
               <span className="text-xs text-muted-foreground">
                 {CYCLE_LABEL[s.cycle] ?? s.cycle}
               </span>
-              <span className="text-right text-xs text-muted-foreground">
-                {formatNextBilling(s.nextBillingDate)}
+              <span className="text-right text-xs">
+                {upcoming ? (
+                  <span className="font-medium text-amber-600 dark:text-amber-400">
+                    {formatNextBilling(s.nextBillingDate)} · {upcoming.label}
+                  </span>
+                ) : (
+                  <span className="text-muted-foreground">
+                    {formatNextBilling(s.nextBillingDate)}
+                  </span>
+                )}
               </span>
             </li>
           );
