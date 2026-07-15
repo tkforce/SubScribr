@@ -42,6 +42,7 @@ export default async function DashboardPage() {
           <AutoSync
             stale={session.userId ? isIngestStale(lastIngestAt, now) : false}
             lastSyncedLabel={formatLastSynced(lastIngestAt, now)}
+            connectionExpired={session.error === "RefreshAccessTokenError"}
           />
         </div>
         <div className="flex items-center gap-2">

@@ -19,9 +19,13 @@ import { Button } from "@/components/ui/button";
 export function AutoSync({
   stale,
   lastSyncedLabel,
+  connectionExpired = false,
 }: {
   stale: boolean;
   lastSyncedLabel: string;
+  // Gmail refresh token is gone — syncing can only fail, so don't auto-fire
+  // and disable the manual button. The dashboard banner owns the messaging.
+  connectionExpired?: boolean;
 }) {
   const [isSyncing, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -46,10 +50,10 @@ export function AutoSync({
   );
 
   useEffect(() => {
-    if (!stale || fired.current) return;
+    if (!stale || connectionExpired || fired.current) return;
     fired.current = true;
     runSync();
-  }, [stale, runSync]);
+  }, [stale, connectionExpired, runSync]);
 
   return (
     <div className="flex items-center gap-1">
@@ -66,14 +70,16 @@ export function AutoSync({
         ) : (
           <span>{lastSyncedLabel}</span>
         )}
-        {error && <span className="text-destructive">{error}</span>}
+        {error && !connectionExpired && (
+          <span className="text-destructive">{error}</span>
+        )}
       </p>
       <Button
         variant="ghost"
         className="cursor-pointer rounded-full p-1 text-muted-foreground hover:text-foreground"
         size="icon-xs"
         aria-label="Sync now"
-        disabled={isSyncing}
+        disabled={isSyncing || connectionExpired}
         onClick={() => runSync({ force: true })}
       >
         <RefreshCw aria-hidden />
