@@ -8,7 +8,7 @@ export async function getSubscriptionEmails(): Promise<SubscriptionEmail[]> {
   const session = await auth();
   if (!session?.user) throw new Error("Unauthenticated");
   if (session.error === "RefreshAccessTokenError") {
-    throw new Error("Gmail connection expired — please sign in again.");
+    throw new Error("Gmail connection expired — please reconnect Gmail.");
   }
   if (!session.access_token)
     throw new Error("No Gmail access token available.");

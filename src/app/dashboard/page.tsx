@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
-import { signOutAction } from "@/app/actions/auth";
+import { reconnectGmail, signOutAction } from "@/app/actions/auth";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { getActiveSubscriptions, computeOverview } from "@/lib/subscriptions";
@@ -55,9 +55,16 @@ export default async function DashboardPage() {
       </header>
 
       {session.error === "RefreshAccessTokenError" && (
-        <p className="mb-6 rounded-md bg-destructive/10 px-3 py-2 text-xs text-destructive">
-          Your Gmail connection expired — please sign in again.
-        </p>
+        <div className="mb-6 flex items-center justify-between gap-3 rounded-md bg-destructive/10 px-3 py-2">
+          <p className="text-xs text-destructive">
+            Your Gmail connection expired — reconnect to resume syncing.
+          </p>
+          <form action={reconnectGmail}>
+            <Button variant="outline" size="sm" type="submit">
+              Reconnect Gmail
+            </Button>
+          </form>
+        </div>
       )}
 
       <StatRow
