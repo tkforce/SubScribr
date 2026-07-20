@@ -11,6 +11,7 @@
     "inspect:extractions": "tsx scripts/inspect-extractions.ts",
     "golden:draft": "tsx scripts/build-golden-draft.ts",
     "eval": "tsx scripts/run-eval.ts",
+    "agent:test": "tsx scripts/test-agent-tools.ts",
     "postinstall": "prisma generate",
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate dev",
