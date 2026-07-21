@@ -73,6 +73,9 @@ model BillingEvent {
   currency        String
   amountInTwd     Decimal
   cycle           String
+  // LLM-assigned category; null when the LLM omitted it. Nullable (not
+  // defaulted) so pre-existing rows read as "unknown", not a fake "other".
+  category        String?
   emailSignalType String
 
   promptVersion String
