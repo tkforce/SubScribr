@@ -168,6 +168,76 @@ describe("deriveSubscriptionState", () => {
     expect(s).toBeNull();
   });
 
+  it("uses SERVICE_REGISTRY category when serviceName is registered", () => {
+    const s = deriveSubscriptionState([
+      ev({
+        serviceName: "claude",
+        emailReceivedAt: new Date("2026-01-15"),
+        emailSignalType: "billing",
+      }),
+    ]);
+    expect(s!.category).toBe("ai");
+  });
+
+  it("unregistered service uses the LLM category from events", () => {
+    const s = deriveSubscriptionState([
+      ev({
+        serviceName: "some-unknown-service",
+        emailReceivedAt: new Date("2026-01-15"),
+        emailSignalType: "billing",
+        category: "productivity",
+      }),
+    ]);
+    expect(s!.category).toBe("productivity");
+  });
+
+  it("unregistered service with multiple categories → latest non-null wins", () => {
+    const s = deriveSubscriptionState([
+      ev({
+        serviceName: "some-unknown-service",
+        emailReceivedAt: new Date("2026-01-15"),
+        emailSignalType: "billing",
+        category: "entertainment",
+      }),
+      ev({
+        serviceName: "some-unknown-service",
+        emailReceivedAt: new Date("2026-02-15"),
+        emailSignalType: "billing",
+        category: "productivity",
+      }),
+      ev({
+        serviceName: "some-unknown-service",
+        emailReceivedAt: new Date("2026-03-15"),
+        emailSignalType: "billing",
+        category: null,
+      }),
+    ]);
+    expect(s!.category).toBe("productivity");
+  });
+
+  it("registry category beats LLM category for registered services", () => {
+    const s = deriveSubscriptionState([
+      ev({
+        serviceName: "claude",
+        emailReceivedAt: new Date("2026-01-15"),
+        emailSignalType: "billing",
+        category: "productivity",
+      }),
+    ]);
+    expect(s!.category).toBe("ai");
+  });
+
+  it("falls back to 'other' for unregistered services with no LLM category", () => {
+    const s = deriveSubscriptionState([
+      ev({
+        serviceName: "some-unknown-service",
+        emailReceivedAt: new Date("2026-01-15"),
+        emailSignalType: "billing",
+      }),
+    ]);
+    expect(s!.category).toBe("other");
+  });
+
   it("trial_reminder + we_miss_you (both soft) still produces no subscription", () => {
     const s = deriveSubscriptionState([
       ev({

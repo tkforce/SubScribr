@@ -1,4 +1,5 @@
 import { db } from "@/lib/db";
+import { SERVICE_REGISTRY } from "@/lib/service-normalization";
 
 // ---------- Pure derive ----------
 
@@ -8,6 +9,7 @@ export type DeriveEvent = {
   amountInTwd: number;
   currency: string;
   cycle: string;
+  category?: string | null;
   emailSignalType: string;
   emailReceivedAt: Date;
 };
@@ -68,7 +70,12 @@ export function deriveSubscriptionState(
     lastSeenAt: sorted[sorted.length - 1].emailReceivedAt,
   };
 
+  // Registry category is authoritative for registered services; otherwise the
+  // latest non-null LLM category across the event log wins, then "other".
+  let llmCategory: string | null = null;
+
   for (const e of sorted) {
+    if (e.category) llmCategory = e.category;
     switch (e.emailSignalType) {
       case "billing":
       case "price_change":
@@ -94,6 +101,9 @@ export function deriveSubscriptionState(
     }
   }
 
+  state.category =
+    SERVICE_REGISTRY[state.serviceName]?.category ?? llmCategory ?? "other";
+
   return state;
 }
 
@@ -115,6 +125,7 @@ export async function upsertSubscriptionsForServices(
         amountInTwd: true,
         currency: true,
         cycle: true,
+        category: true,
         emailSignalType: true,
         emailReceivedAt: true,
       },
@@ -128,6 +139,7 @@ export async function upsertSubscriptionsForServices(
       amountInTwd: Number(e.amountInTwd),
       currency: e.currency,
       cycle: e.cycle,
+      category: e.category,
       emailSignalType: e.emailSignalType,
       emailReceivedAt: e.emailReceivedAt,
     }));

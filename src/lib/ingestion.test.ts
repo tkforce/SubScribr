@@ -42,6 +42,22 @@ describe("processEmail", () => {
     expect(out.row.rawServiceName).toBe("Cursor");
     expect(out.row.amountInTwd).toBeCloseTo(20 * 31.5, 2);
     expect(out.row.gmailMessageId).toBe("msg-1");
+    expect(out.row.category).toBe("ai");
+  });
+
+  it("carries category=null when the LLM omits it", async () => {
+    const model = modelReturning({
+      isSubscriptionRelated: true,
+      rawServiceName: "Cursor",
+      amount: 20,
+      currency: "USD",
+      cycle: "monthly",
+      emailSignalType: "billing",
+    });
+    const out = await processEmail(email, "user-1", model);
+    expect(out.kind).toBe("inserted");
+    if (out.kind !== "inserted") return;
+    expect(out.row.category).toBeNull();
   });
 
   it("returns null when isSubscriptionRelated is false", async () => {

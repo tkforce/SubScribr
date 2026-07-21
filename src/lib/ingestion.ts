@@ -44,6 +44,7 @@ type BillingEventInsert = {
   currency: string;
   amountInTwd: number;
   cycle: string;
+  category: string | null;
   emailSignalType: string;
   promptVersion: string;
 };
@@ -92,6 +93,7 @@ export async function processEmail(
       currency,
       amountInTwd: convertToTwd(amount, currency),
       cycle,
+      category: extraction.category ?? null,
       emailSignalType,
       promptVersion: PROMPT_VERSION,
     },
