@@ -4,8 +4,8 @@ import {
   buildGoldenDraft,
   type DraftInput,
   type GoldenEntry,
-} from "@/lib/golden";
-import type { Extraction } from "@/lib/extraction";
+} from "@/lib/eval/golden";
+import type { Extraction } from "@/lib/ingestion/extraction";
 
 const EXTRACTIONS_DIR = "docs/extractions";
 const DEFAULT_OUT = join(EXTRACTIONS_DIR, "golden-set.json");

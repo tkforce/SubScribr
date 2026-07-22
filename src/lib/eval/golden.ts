@@ -1,4 +1,4 @@
-import type { Extraction } from "@/lib/extraction";
+import type { Extraction } from "@/lib/ingestion/extraction";
 
 // One reviewable row: the email the human reads, the LLM's guess for reference,
 // and `golden` — the human-arbitrated truth the eval scorer will compare against.

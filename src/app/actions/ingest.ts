@@ -2,7 +2,7 @@
 
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
-import { ingestEmails, type IngestStats } from "@/lib/ingestion";
+import { ingestEmails, type IngestStats } from "@/lib/ingestion/pipeline";
 import { shouldRunIngest } from "@/lib/ingest-freshness";
 import { INGEST_WINDOW_DAYS } from "@/lib/constants";
 

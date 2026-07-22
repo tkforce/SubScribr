@@ -4,7 +4,7 @@ import {
   buildSubscriptionWhere,
   getServiceInfoForAgent,
   shapeSubscriptionForAgent,
-} from "./agent-tools";
+} from "./tools";
 
 describe("buildSubscriptionWhere", () => {
   it("defaults to active subscriptions for the bound user", () => {

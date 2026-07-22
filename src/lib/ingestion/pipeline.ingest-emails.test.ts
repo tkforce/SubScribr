@@ -12,14 +12,14 @@ vi.mock("@/lib/db", () => ({
   },
 }));
 
-vi.mock("@/lib/gmail", () => ({
+vi.mock("@/lib/ingestion/gmail", () => ({
   buildSubscriptionQuery: vi.fn(() => "test-query"),
   listMessageIds: vi.fn(async () => []),
   fetchMessagesByIds: vi.fn(async () => []),
 }));
 
 import { db } from "@/lib/db";
-import { ingestEmails } from "./ingestion";
+import { ingestEmails } from "./pipeline";
 
 describe("ingestEmails", () => {
   it("updates lastIngestAt even when there are no new emails", async () => {

@@ -5,14 +5,14 @@ import {
   fetchMessagesByIds,
   listMessageIds,
   type SubscriptionEmail,
-} from "@/lib/gmail";
-import { isBlacklisted } from "@/lib/blacklist";
-import { PROMPT_VERSION, llmExtract } from "@/lib/extraction";
+} from "@/lib/ingestion/gmail";
+import { isBlacklisted } from "@/lib/ingestion/blacklist";
+import { PROMPT_VERSION, llmExtract } from "@/lib/ingestion/extraction";
 import { getModel } from "@/lib/llm";
 import type { LanguageModel } from "ai";
-import { normalizeServiceName } from "@/lib/service-normalization";
+import { normalizeServiceName } from "@/lib/services/normalization";
 import { convertToTwd } from "@/lib/fx";
-import { upsertSubscriptionsForServices } from "@/lib/subscription-derive";
+import { upsertSubscriptionsForServices } from "@/lib/ingestion/derive";
 
 export type IngestStats = {
   candidateCount: number;

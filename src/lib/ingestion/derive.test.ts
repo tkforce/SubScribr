@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   deriveSubscriptionState,
   type DeriveEvent,
-} from "./subscription-derive";
+} from "./derive";
 
 function ev(partial: Partial<DeriveEvent> & {
   emailReceivedAt: Date;

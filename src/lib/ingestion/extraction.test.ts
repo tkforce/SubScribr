@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { MockLanguageModelV2 } from "ai/test";
 import { ExtractionSchema, llmExtract } from "./extraction";
-import type { SubscriptionEmail } from "@/lib/gmail";
+import type { SubscriptionEmail } from "@/lib/ingestion/gmail";
 
 describe("ExtractionSchema", () => {
   const base = {

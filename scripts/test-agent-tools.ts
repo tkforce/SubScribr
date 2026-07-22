@@ -8,7 +8,7 @@ import { getModel } from "@/lib/llm";
 // db (and everything that imports it) must be loaded AFTER dotenv config —
 // static imports hoist above the config() calls and Prisma would capture an
 // undefined DATABASE_URL. Type-only imports are erased, so they are safe.
-import type { buildAgentTools } from "@/lib/agent-tools";
+import type { buildAgentTools } from "@/lib/agent/tools";
 
 // Week 6 Day 5: CLI integration test for the first two agent tools against
 // real DB data. Verifies tool choice, argument generation, and multi-step
@@ -70,7 +70,7 @@ async function ask(tools: ReturnType<typeof buildAgentTools>, question: string) 
 
 async function main() {
   const { db } = await import("@/lib/db");
-  const { buildAgentTools } = await import("@/lib/agent-tools");
+  const { buildAgentTools } = await import("@/lib/agent/tools");
 
   const user = await db.user.findFirst();
   if (!user) {
