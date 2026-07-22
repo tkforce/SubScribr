@@ -86,6 +86,84 @@ export function computeMonthDelta(
   };
 }
 
+// ---------- Per-service price history ----------
+
+// Signal types that carry a real charge/price figure. Mirrors the derive
+// fold in subscription-derive.ts — keep the two lists in sync.
+const AMOUNT_BEARING_SIGNALS = new Set([
+  "billing",
+  "price_change",
+  "renewal_notice",
+]);
+
+export type ServiceHistoryEvent = {
+  amount: number;
+  currency: string;
+  amountInTwd: number;
+  cycle: string;
+  emailSignalType: string;
+  emailReceivedAt: Date;
+};
+
+export type ServiceHistoryPoint = {
+  date: string; // "YYYY-MM-DD", local calendar date
+  amount: number;
+  currency: string;
+  amountInTwd: number;
+  cycle: string;
+  emailSignalType: string;
+};
+
+export type PriceChange = {
+  date: string; // date of the event that introduced the new price
+  fromTwd: number;
+  toTwd: number;
+  pctChange: number; // (to - from) / from, rounded to 3 decimals
+};
+
+export function localIsoDate(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+// Price history of one service from its billing events. Pure — no I/O.
+// A cycle switch (monthly→yearly) is a plan change, not a price change:
+// comparing amounts across cycles would report nonsense like +1100%.
+export function computeServiceHistory(events: ServiceHistoryEvent[]): {
+  points: ServiceHistoryPoint[];
+  priceChanges: PriceChange[];
+} {
+  const sorted = events
+    .filter((e) => AMOUNT_BEARING_SIGNALS.has(e.emailSignalType))
+    .sort((a, b) => a.emailReceivedAt.getTime() - b.emailReceivedAt.getTime());
+
+  const points: ServiceHistoryPoint[] = sorted.map((e) => ({
+    date: localIsoDate(e.emailReceivedAt),
+    amount: e.amount,
+    currency: e.currency,
+    amountInTwd: e.amountInTwd,
+    cycle: e.cycle,
+    emailSignalType: e.emailSignalType,
+  }));
+
+  const priceChanges: PriceChange[] = [];
+  for (let i = 1; i < sorted.length; i++) {
+    const prev = sorted[i - 1];
+    const curr = sorted[i];
+    if (curr.cycle !== prev.cycle) continue;
+    if (curr.amountInTwd === prev.amountInTwd) continue;
+    priceChanges.push({
+      date: localIsoDate(curr.emailReceivedAt),
+      fromTwd: prev.amountInTwd,
+      toTwd: curr.amountInTwd,
+      pctChange:
+        Math.round(((curr.amountInTwd - prev.amountInTwd) / prev.amountInTwd) * 1000) /
+        1000,
+    });
+  }
+
+  return { points, priceChanges };
+}
+
 // ---------- I/O orchestrator ----------
 
 // Longest cycle is yearly: an event up to 12 months before the window start

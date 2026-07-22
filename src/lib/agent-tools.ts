@@ -4,6 +4,12 @@ import { db } from "@/lib/db";
 import { computeOverview, monthlyAmountTwd } from "@/lib/subscriptions";
 import { SERVICE_REGISTRY, normalizeServiceName } from "@/lib/service-normalization";
 import { getServiceKnowledge } from "@/lib/service-knowledge";
+import {
+  computeMonthDelta,
+  computeServiceHistory,
+  getMonthlyTrend,
+} from "@/lib/monthly-trend";
+import { ANOMALY_TYPES, detectAnomalies } from "@/lib/anomalies";
 
 // Agent tools (F7). userId is bound via closure in buildAgentTools and is
 // deliberately NOT part of any inputSchema: the LLM must never control the
@@ -50,14 +56,16 @@ export function buildSubscriptionWhere(
   if (filter.category) where.category = filter.category;
 
   if (filter.serviceName) {
-    // Canonical ids pass through untouched — slugify would mangle
-    // underscores ("youtube_premium" → "youtubepremium").
-    where.serviceName = SERVICE_REGISTRY[filter.serviceName]
-      ? filter.serviceName
-      : normalizeServiceName(filter.serviceName).canonicalId;
+    where.serviceName = toCanonicalId(filter.serviceName);
   }
 
   return where;
+}
+
+// Canonical ids pass through untouched — slugify would mangle
+// underscores ("youtube_premium" → "youtubepremium").
+export function toCanonicalId(raw: string): string {
+  return SERVICE_REGISTRY[raw] ? raw : normalizeServiceName(raw).canonicalId;
 }
 
 // Accepts both Prisma rows (Decimal amounts) and plain objects.
@@ -150,6 +158,87 @@ export function buildAgentTools(userId: string) {
           .describe("服務名稱或 canonical ID，例如 netflix 或 Netflix"),
       }),
       execute: async ({ serviceName }) => getServiceInfoForAgent(serviceName),
+    }),
+
+    calculate_trend: tool({
+      description:
+        "從使用者的歷史帳單計算消費趨勢。不帶 serviceName：回傳最近 N 個月的整體月支出趨勢" +
+        "（TWD、含上月比較）。帶 serviceName：回傳該服務的歷史帳單金額列表與偵測到的漲降價。" +
+        "需要回答「花費怎麼變化、某服務對使用者漲過價嗎」時用這個。同一次分析不要重複查同樣的參數。",
+      inputSchema: z.object({
+        serviceName: z
+          .string()
+          .optional()
+          .describe("要查單一服務的價格歷史時使用；省略時回傳整體月支出趨勢"),
+        months: z
+          .number()
+          .int()
+          .min(2)
+          .max(12)
+          .optional()
+          .describe("整體趨勢回看的月數，預設 6，只在不帶 serviceName 時有意義"),
+      }),
+      execute: async ({ serviceName, months }) => {
+        if (!serviceName) {
+          const points = await getMonthlyTrend(userId, months ?? 6);
+          return { scope: "overall" as const, points, delta: computeMonthDelta(points) };
+        }
+
+        const canonicalId = toCanonicalId(serviceName);
+        const rows = await db.billingEvent.findMany({
+          where: { userId, serviceName: canonicalId },
+          select: {
+            amount: true,
+            currency: true,
+            amountInTwd: true,
+            cycle: true,
+            emailSignalType: true,
+            emailReceivedAt: true,
+          },
+        });
+        const { points, priceChanges } = computeServiceHistory(
+          rows.map((r) => ({
+            amount: Number(r.amount),
+            currency: r.currency,
+            amountInTwd: Number(r.amountInTwd),
+            cycle: r.cycle,
+            emailSignalType: r.emailSignalType,
+            emailReceivedAt: r.emailReceivedAt,
+          })),
+        );
+        // Expected miss → structured not-found, same pattern as
+        // getServiceInfoForAgent: the agent degrades instead of failing.
+        if (points.length === 0) {
+          return {
+            scope: "service" as const,
+            found: false as const,
+            serviceName: canonicalId,
+            note: "帳單紀錄裡沒有這個服務的金額事件，無法計算趨勢。請確認服務名稱，或改用 query_subscriptions 看使用者訂了什麼。",
+          };
+        }
+        return {
+          scope: "service" as const,
+          found: true as const,
+          serviceName: canonicalId,
+          points,
+          priceChanges,
+        };
+      },
+    }),
+
+    detect_anomalies: tool({
+      description:
+        "掃描使用者訂閱的異常事實：duplicate（同分類有多個使用中訂閱）、idle（太久沒收到帳單信，" +
+        "可能已在外部取消）、price_change（同服務金額變動）、upcoming_renewal（14 天內即將扣款或" +
+        "試用到期）。要產生「需要注意的事項」清單時用這個；不帶 types 就四種全掃。" +
+        "回傳的是事實，是否真的算問題由你判斷（例如同分類兩個訂閱不一定重複）。",
+      inputSchema: z.object({
+        types: z
+          .array(z.enum(ANOMALY_TYPES))
+          .optional()
+          .describe("要掃描的異常種類，省略時全部掃描"),
+      }),
+      execute: async ({ types }) => detectAnomalies(userId, types ?? ANOMALY_TYPES),
     }),
   };
 }
