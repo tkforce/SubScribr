@@ -2,6 +2,8 @@ import { describe, it, expect } from "vitest";
 import {
   computeMonthDelta,
   computeMonthlySpend,
+  computeServiceHistory,
+  type ServiceHistoryEvent,
   type TrendEvent,
 } from "./monthly-trend";
 
@@ -200,5 +202,85 @@ describe("computeMonthDelta", () => {
   it("returns null with fewer than two points", () => {
     expect(computeMonthDelta([])).toBeNull();
     expect(computeMonthDelta([{ month: "2026-07", totalTwd: 400 }])).toBeNull();
+  });
+});
+
+describe("computeServiceHistory", () => {
+  function hev(overrides: Partial<ServiceHistoryEvent>): ServiceHistoryEvent {
+    return {
+      amount: 390,
+      currency: "TWD",
+      amountInTwd: 390,
+      cycle: "monthly",
+      emailSignalType: "billing",
+      emailReceivedAt: new Date(2026, 5, 10),
+      ...overrides,
+    };
+  }
+
+  it("returns empty history for no events", () => {
+    expect(computeServiceHistory([])).toEqual({ points: [], priceChanges: [] });
+  });
+
+  it("keeps only amount-bearing signal types", () => {
+    const { points } = computeServiceHistory([
+      hev({ emailSignalType: "billing" }),
+      hev({ emailSignalType: "we_miss_you" }),
+      hev({ emailSignalType: "trial_reminder" }),
+      hev({ emailSignalType: "cancellation" }),
+      hev({ emailSignalType: "price_change" }),
+      hev({ emailSignalType: "renewal_notice" }),
+    ]);
+    expect(points.map((p) => p.emailSignalType)).toEqual([
+      "billing",
+      "price_change",
+      "renewal_notice",
+    ]);
+  });
+
+  it("sorts points ascending and formats dates as ISO strings", () => {
+    const { points } = computeServiceHistory([
+      hev({ emailReceivedAt: new Date(2026, 5, 10), amountInTwd: 390 }),
+      hev({ emailReceivedAt: new Date(2026, 3, 10), amountInTwd: 330 }),
+    ]);
+    expect(points.map((p) => p.date)).toEqual(["2026-04-10", "2026-06-10"]);
+    expect(points[0].amountInTwd).toBe(330);
+  });
+
+  it("detects a price increase between consecutive same-cycle events", () => {
+    const { priceChanges } = computeServiceHistory([
+      hev({ emailReceivedAt: new Date(2026, 3, 10), amountInTwd: 330, amount: 330 }),
+      hev({ emailReceivedAt: new Date(2026, 4, 10), amountInTwd: 330, amount: 330 }),
+      hev({ emailReceivedAt: new Date(2026, 5, 10), amountInTwd: 390, amount: 390 }),
+    ]);
+    expect(priceChanges).toEqual([
+      { date: "2026-06-10", fromTwd: 330, toTwd: 390, pctChange: 0.182 },
+    ]);
+  });
+
+  it("reports a price decrease with negative pct", () => {
+    const { priceChanges } = computeServiceHistory([
+      hev({ emailReceivedAt: new Date(2026, 3, 10), amountInTwd: 500 }),
+      hev({ emailReceivedAt: new Date(2026, 4, 10), amountInTwd: 400 }),
+    ]);
+    expect(priceChanges).toEqual([
+      { date: "2026-05-10", fromTwd: 500, toTwd: 400, pctChange: -0.2 },
+    ]);
+  });
+
+  it("does not flag equal consecutive amounts", () => {
+    const { priceChanges } = computeServiceHistory([
+      hev({ emailReceivedAt: new Date(2026, 3, 10) }),
+      hev({ emailReceivedAt: new Date(2026, 4, 10) }),
+    ]);
+    expect(priceChanges).toEqual([]);
+  });
+
+  it("treats a cycle switch as a plan change, not a price change", () => {
+    const { priceChanges } = computeServiceHistory([
+      hev({ emailReceivedAt: new Date(2026, 3, 10), cycle: "monthly", amountInTwd: 390 }),
+      hev({ emailReceivedAt: new Date(2026, 4, 10), cycle: "yearly", amountInTwd: 3990 }),
+    ]);
+    expect(priceChanges).toEqual([]);
   });
 });

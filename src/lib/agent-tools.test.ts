@@ -110,13 +110,17 @@ describe("getServiceInfoForAgent", () => {
 });
 
 describe("buildAgentTools", () => {
-  it("exposes exactly the two Week 6 tools, each with an execute", () => {
+  it("exposes the four F7 tools, each with an execute", () => {
     const tools = buildAgentTools("u1");
     expect(Object.keys(tools).sort()).toEqual([
+      "calculate_trend",
+      "detect_anomalies",
       "get_service_info",
       "query_subscriptions",
     ]);
     expect(typeof tools.get_service_info.execute).toBe("function");
     expect(typeof tools.query_subscriptions.execute).toBe("function");
+    expect(typeof tools.calculate_trend.execute).toBe("function");
+    expect(typeof tools.detect_anomalies.execute).toBe("function");
   });
 });
