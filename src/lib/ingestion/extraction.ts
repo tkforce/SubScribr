@@ -33,7 +33,7 @@ export const ExtractionSchema = z.object({
 
 export type Extraction = z.infer<typeof ExtractionSchema>;
 
-export const PROMPT_VERSION = "v4-currency-rules-temp0";
+export const PROMPT_VERSION = "v5-no-fabricated-amount-temp0";
 
 export const SYSTEM_PROMPT = `你是訂閱信件分析師。從 email 中抽取訂閱資訊，依下方 JSON schema 回應。
 
@@ -56,7 +56,11 @@ export const SYSTEM_PROMPT = `你是訂閱信件分析師。從 email 中抽取�
   - 模糊無法判斷 → unclear
 
 抽欄位規則：
-- amount: 純數字，不含貨幣符號。多個金額時取「實際扣款總額」
+- amount: 純數字，不含貨幣符號。多個金額時取「實際扣款總額」。
+  只有信中明確、帶金額語境的數字才算（例如緊跟貨幣符號、或緊接在「已收取／
+  已扣款／總計／金額」等字眼旁）。如果信中找不到這樣的數字，即使
+  isSubscriptionRelated 是 true，也把 amount（以及 currency、cycle）留空，
+  絕對不要用你對這個服務的定價知識去猜測或補上金額——寧可留空，也不要編造。
 - currency: 依信件實際線索判斷，不要一律預設台幣。判斷優先序：
   1. 明確貨幣標記最優先：NT$ / 新台幣 / 「元」→ TWD；US$ / USD → USD；
      ¥ / 円 / JPY → JPY；€ / EUR → EUR
@@ -109,7 +113,17 @@ From: invoice+statements@mail.anthropic.com，內文 "Claude Pro $20.00 Paid"
 範例 6：
 From: Apple，內文同時出現 "NT$ 690" 與 "$690/月"
 重點：有明確 NT$ 標記，以明確標記為準
-→ currency: TWD`;
+→ currency: TWD
+
+amount 判斷範例：
+
+範例 7：
+Subject: Your Pro subscription is confirmed
+內文："Thanks for starting your Pro subscription. Your payment method has
+been charged. The next charge will be on Aug 17, 2026."
+重點：這是訂閱確認信，isSubscriptionRelated 是 true，但全信找不到任何
+標示為金額的數字——不要用「Pro 方案通常多少錢」的先驗知識去補
+→ isSubscriptionRelated: true, emailSignalType: billing, amount 留空`;
 
 export function formatUserPrompt(email: SubscriptionEmail): string {
   return `From: ${email.from}

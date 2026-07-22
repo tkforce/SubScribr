@@ -178,8 +178,18 @@ function decodeBase64Url(data: string): string {
   return Buffer.from(normalized + padding, "base64").toString("utf-8");
 }
 
-function stripHtml(html: string): string {
+export function stripHtml(html: string): string {
   return html
+    // HTML comments — including <!--[if mso]>...<![endif]--> conditional
+    // comments that MJML/transactional-email templates use for Outlook-only
+    // boilerplate. These are invisible on every non-Outlook renderer
+    // (Gmail included), but the tag-stripper below only understands
+    // <tag> boundaries, not comment syntax: the ">" inside "<!--[if mso]>"
+    // terminates it as if it were a real tag, leaving the comment's inner
+    // text (e.g. a stray "96" from <o:PixelsPerInch>96</o:PixelsPerInch>)
+    // to leak through as if it were real body content. Strip comments first,
+    // as a whole, before any tag-level processing.
+    .replace(/<!--[\s\S]*?-->/g, "")
     .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "")
     .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "")
     .replace(/<[^>]+>/g, " ")
