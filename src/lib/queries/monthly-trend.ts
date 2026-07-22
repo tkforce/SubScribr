@@ -116,8 +116,9 @@ export type ServiceHistoryPoint = {
 
 export type PriceChange = {
   date: string; // date of the event that introduced the new price
-  fromTwd: number;
-  toTwd: number;
+  currency: string; // the currency both amounts are quoted in
+  from: number; // native amount before
+  to: number; // native amount after
   pctChange: number; // (to - from) / from, rounded to 3 decimals
 };
 
@@ -149,15 +150,20 @@ export function computeServiceHistory(events: ServiceHistoryEvent[]): {
   for (let i = 1; i < sorted.length; i++) {
     const prev = sorted[i - 1];
     const curr = sorted[i];
+    // A price change means the vendor charged a different number of the SAME
+    // currency. Comparing amountInTwd instead turns FX drift (20 USD → 630 vs
+    // 620 TWD) and mixed currency records (690 TWD estimate → 20 USD charge)
+    // into phantom changes for any foreign-currency service.
     if (curr.cycle !== prev.cycle) continue;
-    if (curr.amountInTwd === prev.amountInTwd) continue;
+    if (curr.currency !== prev.currency) continue;
+    if (curr.amount === prev.amount) continue;
     priceChanges.push({
       date: localIsoDate(curr.emailReceivedAt),
-      fromTwd: prev.amountInTwd,
-      toTwd: curr.amountInTwd,
+      currency: curr.currency,
+      from: prev.amount,
+      to: curr.amount,
       pctChange:
-        Math.round(((curr.amountInTwd - prev.amountInTwd) / prev.amountInTwd) * 1000) /
-        1000,
+        Math.round(((curr.amount - prev.amount) / prev.amount) * 1000) / 1000,
     });
   }
 
