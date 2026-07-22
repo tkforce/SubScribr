@@ -111,8 +111,9 @@ export type PriceChangeEvent = ServiceHistoryEvent & { serviceName: string };
 export type ServicePriceChange = {
   serviceName: string;
   date: string;
-  fromTwd: number;
-  toTwd: number;
+  currency: string;
+  from: number;
+  to: number;
   pctChange: number;
 };
 

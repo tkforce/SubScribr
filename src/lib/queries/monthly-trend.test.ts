@@ -249,22 +249,22 @@ describe("computeServiceHistory", () => {
 
   it("detects a price increase between consecutive same-cycle events", () => {
     const { priceChanges } = computeServiceHistory([
-      hev({ emailReceivedAt: new Date(2026, 3, 10), amountInTwd: 330, amount: 330 }),
-      hev({ emailReceivedAt: new Date(2026, 4, 10), amountInTwd: 330, amount: 330 }),
-      hev({ emailReceivedAt: new Date(2026, 5, 10), amountInTwd: 390, amount: 390 }),
+      hev({ emailReceivedAt: new Date(2026, 3, 10), amount: 330, amountInTwd: 330 }),
+      hev({ emailReceivedAt: new Date(2026, 4, 10), amount: 330, amountInTwd: 330 }),
+      hev({ emailReceivedAt: new Date(2026, 5, 10), amount: 390, amountInTwd: 390 }),
     ]);
     expect(priceChanges).toEqual([
-      { date: "2026-06-10", fromTwd: 330, toTwd: 390, pctChange: 0.182 },
+      { date: "2026-06-10", currency: "TWD", from: 330, to: 390, pctChange: 0.182 },
     ]);
   });
 
   it("reports a price decrease with negative pct", () => {
     const { priceChanges } = computeServiceHistory([
-      hev({ emailReceivedAt: new Date(2026, 3, 10), amountInTwd: 500 }),
-      hev({ emailReceivedAt: new Date(2026, 4, 10), amountInTwd: 400 }),
+      hev({ emailReceivedAt: new Date(2026, 3, 10), amount: 500, amountInTwd: 500 }),
+      hev({ emailReceivedAt: new Date(2026, 4, 10), amount: 400, amountInTwd: 400 }),
     ]);
     expect(priceChanges).toEqual([
-      { date: "2026-05-10", fromTwd: 500, toTwd: 400, pctChange: -0.2 },
+      { date: "2026-05-10", currency: "TWD", from: 500, to: 400, pctChange: -0.2 },
     ]);
   });
 
@@ -280,6 +280,37 @@ describe("computeServiceHistory", () => {
     const { priceChanges } = computeServiceHistory([
       hev({ emailReceivedAt: new Date(2026, 3, 10), cycle: "monthly", amountInTwd: 390 }),
       hev({ emailReceivedAt: new Date(2026, 4, 10), cycle: "yearly", amountInTwd: 3990 }),
+    ]);
+    expect(priceChanges).toEqual([]);
+  });
+
+  it("reports the native amount and currency for a same-currency change", () => {
+    const { priceChanges } = computeServiceHistory([
+      hev({ emailReceivedAt: new Date(2026, 5, 23), currency: "TWD", amount: 299, amountInTwd: 299 }),
+      hev({ emailReceivedAt: new Date(2026, 6, 23), currency: "TWD", amount: 598, amountInTwd: 598 }),
+    ]);
+    expect(priceChanges).toEqual([
+      { date: "2026-07-23", currency: "TWD", from: 299, to: 598, pctChange: 1 },
+    ]);
+  });
+
+  it("ignores FX drift: same currency and native amount, different TWD", () => {
+    // 20 USD both months; only the exchange rate moved (630 vs 620 TWD).
+    // amountInTwd differs but the price did not change.
+    const { priceChanges } = computeServiceHistory([
+      hev({ emailReceivedAt: new Date(2026, 3, 15), currency: "USD", amount: 20, amountInTwd: 630 }),
+      hev({ emailReceivedAt: new Date(2026, 4, 15), currency: "USD", amount: 20, amountInTwd: 620 }),
+    ]);
+    expect(priceChanges).toEqual([]);
+  });
+
+  it("does not compare amounts across different currencies", () => {
+    // The real Claude case: a TWD renewal estimate, then an actual USD charge.
+    // amountInTwd (690 → 630) would look like a drop, but it is a currency
+    // record change, not a price change.
+    const { priceChanges } = computeServiceHistory([
+      hev({ emailReceivedAt: new Date(2026, 3, 30), currency: "TWD", amount: 690, amountInTwd: 690 }),
+      hev({ emailReceivedAt: new Date(2026, 4, 15), currency: "USD", amount: 20, amountInTwd: 630 }),
     ]);
     expect(priceChanges).toEqual([]);
   });

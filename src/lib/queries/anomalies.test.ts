@@ -122,17 +122,18 @@ describe("detectPriceChanges", () => {
 
   it("reports per-service price changes with the service name attached", () => {
     const out = detectPriceChanges([
-      pev({ emailReceivedAt: new Date(2026, 3, 10), amountInTwd: 330 }),
-      pev({ emailReceivedAt: new Date(2026, 5, 10), amountInTwd: 390 }),
-      pev({ serviceName: "spotify", emailReceivedAt: new Date(2026, 4, 1), amountInTwd: 149 }),
-      pev({ serviceName: "spotify", emailReceivedAt: new Date(2026, 5, 1), amountInTwd: 149 }),
+      pev({ emailReceivedAt: new Date(2026, 3, 10), amount: 330, amountInTwd: 330 }),
+      pev({ emailReceivedAt: new Date(2026, 5, 10), amount: 390, amountInTwd: 390 }),
+      pev({ serviceName: "spotify", emailReceivedAt: new Date(2026, 4, 1), amount: 149, amountInTwd: 149 }),
+      pev({ serviceName: "spotify", emailReceivedAt: new Date(2026, 5, 1), amount: 149, amountInTwd: 149 }),
     ]);
     expect(out).toEqual([
       {
         serviceName: "netflix",
         date: "2026-06-10",
-        fromTwd: 330,
-        toTwd: 390,
+        currency: "TWD",
+        from: 330,
+        to: 390,
         pctChange: 0.182,
       },
     ]);
