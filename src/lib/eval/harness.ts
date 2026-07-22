@@ -1,4 +1,4 @@
-import type { Extraction } from "@/lib/extraction";
+import type { Extraction } from "@/lib/ingestion/extraction";
 
 export type EvalPair = {
   id: string;

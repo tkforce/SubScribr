@@ -13,7 +13,7 @@ vi.mock("@/lib/db", () => ({
 }));
 
 const mockIngestEmails = vi.fn();
-vi.mock("@/lib/ingestion", () => ({
+vi.mock("@/lib/ingestion/pipeline", () => ({
   ingestEmails: (...args: unknown[]) => mockIngestEmails(...args),
 }));
 

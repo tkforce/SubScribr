@@ -5,7 +5,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { StatRow } from "@/app/dashboard/stat-row";
 import { TrendChart } from "@/app/dashboard/trend-chart";
 import { SubscriptionList } from "@/app/dashboard/subscription-list";
-import type { SubscriptionView } from "@/lib/subscriptions";
+import type { SubscriptionView } from "@/lib/queries/subscriptions";
 
 const MOCK_SUBS: SubscriptionView[] = [
   {

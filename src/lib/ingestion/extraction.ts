@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { generateObject } from "ai";
 import type { LanguageModel } from "ai";
-import type { SubscriptionEmail } from "@/lib/gmail";
+import type { SubscriptionEmail } from "@/lib/ingestion/gmail";
 import { getModel } from "@/lib/llm";
 
 export const ExtractionSchema = z.object({

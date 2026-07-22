@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { SERVICE_REGISTRY } from "./service-normalization";
+import { SERVICE_REGISTRY } from "./normalization";
 import {
   SERVICE_KNOWLEDGE,
   formatKnowledgeForPrompt,
   getServiceKnowledge,
-} from "./service-knowledge";
+} from "./knowledge";
 
 describe("SERVICE_KNOWLEDGE", () => {
   it("covers every service in SERVICE_REGISTRY with matching ids", () => {

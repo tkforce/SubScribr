@@ -1,4 +1,4 @@
-import { normalizeServiceName } from "./service-normalization";
+import { normalizeServiceName } from "./normalization";
 
 // Static service knowledge injected into the agent prompt (F5). This is the
 // "code provides facts, LLM provides reasoning" boundary: without it the agent

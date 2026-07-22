@@ -1,4 +1,4 @@
-import type { SubscriptionEmail } from "@/lib/gmail";
+import type { SubscriptionEmail } from "@/lib/ingestion/gmail";
 
 const SUBJECT_BLACKLIST = [
   /password reset/i,

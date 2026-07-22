@@ -3,8 +3,8 @@
 import { useState, useTransition } from "react";
 import { getSubscriptionEmails } from "@/app/actions/emails";
 import { ingestSubscriptionEmails } from "@/app/actions/ingest";
-import type { IngestStats } from "@/lib/ingestion";
-import type { SubscriptionEmail } from "@/lib/gmail";
+import type { IngestStats } from "@/lib/ingestion/pipeline";
+import type { SubscriptionEmail } from "@/lib/ingestion/gmail";
 import { Button } from "@/components/ui/button";
 import {
   Table,

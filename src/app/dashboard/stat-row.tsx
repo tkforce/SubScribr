@@ -1,4 +1,4 @@
-import type { MonthDelta } from "@/lib/monthly-trend";
+import type { MonthDelta } from "@/lib/queries/monthly-trend";
 
 function formatTwd(n: number): string {
   return `NT$ ${Math.round(n).toLocaleString()}`;

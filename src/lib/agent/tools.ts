@@ -1,15 +1,15 @@
 import { tool } from "ai";
 import { z } from "zod";
 import { db } from "@/lib/db";
-import { computeOverview, monthlyAmountTwd } from "@/lib/subscriptions";
-import { SERVICE_REGISTRY, normalizeServiceName } from "@/lib/service-normalization";
-import { getServiceKnowledge } from "@/lib/service-knowledge";
+import { computeOverview, monthlyAmountTwd } from "@/lib/queries/subscriptions";
+import { SERVICE_REGISTRY, normalizeServiceName } from "@/lib/services/normalization";
+import { getServiceKnowledge } from "@/lib/services/knowledge";
 import {
   computeMonthDelta,
   computeServiceHistory,
   getMonthlyTrend,
-} from "@/lib/monthly-trend";
-import { ANOMALY_TYPES, detectAnomalies } from "@/lib/anomalies";
+} from "@/lib/queries/monthly-trend";
+import { ANOMALY_TYPES, detectAnomalies } from "@/lib/queries/anomalies";
 
 // Agent tools (F7). userId is bound via closure in buildAgentTools and is
 // deliberately NOT part of any inputSchema: the LLM must never control the

@@ -3,7 +3,7 @@ import {
   SERVICE_REGISTRY,
   normalizeServiceName,
   slugify,
-} from "./service-normalization";
+} from "./normalization";
 
 describe("normalizeServiceName", () => {
   it("falls back to slugify when no aliases match (Week 2 default state)", () => {

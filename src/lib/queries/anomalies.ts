@@ -1,10 +1,10 @@
 import { db } from "@/lib/db";
-import { monthlyAmountTwd } from "@/lib/subscriptions";
+import { monthlyAmountTwd } from "@/lib/queries/subscriptions";
 import {
   computeServiceHistory,
   localIsoDate,
   type ServiceHistoryEvent,
-} from "@/lib/monthly-trend";
+} from "@/lib/queries/monthly-trend";
 
 // Anomaly detectors (F7 detect_anomalies / section 8a). Code surfaces facts
 // deterministically; whether a fact is actually a problem (e.g. Spotify +

@@ -1,6 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 import { Avatar } from "./avatar";
-import { upcomingBilling, type SubscriptionView } from "@/lib/subscriptions";
+import { upcomingBilling, type SubscriptionView } from "@/lib/queries/subscriptions";
 
 const CYCLE_LABEL: Record<string, string> = {
   monthly: "月繳",

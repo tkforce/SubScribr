@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { MockLanguageModelV2 } from "ai/test";
-import { processEmail } from "./ingestion";
-import type { SubscriptionEmail } from "@/lib/gmail";
+import { processEmail } from "./pipeline";
+import type { SubscriptionEmail } from "@/lib/ingestion/gmail";
 
 const email: SubscriptionEmail = {
   id: "msg-1",

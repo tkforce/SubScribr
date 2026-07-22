@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { evaluate, type EvalPair } from "./eval";
-import type { Extraction } from "./extraction";
+import { evaluate, type EvalPair } from "./harness";
+import type { Extraction } from "@/lib/ingestion/extraction";
 
 function pair(id: string, golden: Extraction, predicted: Extraction | null): EvalPair {
   return { id, golden, predicted };

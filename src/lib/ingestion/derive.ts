@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import { SERVICE_REGISTRY } from "@/lib/service-normalization";
+import { SERVICE_REGISTRY } from "@/lib/services/normalization";
 
 // ---------- Pure derive ----------
 
