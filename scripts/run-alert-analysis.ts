@@ -41,7 +41,7 @@ async function main() {
   console.log(JSON.stringify(report, null, 2));
 
   const started = Date.now();
-  const { cards } = await runWeeklyAlertAnalysis(user.id);
+  const { cards, usage } = await runWeeklyAlertAnalysis(user.id);
   const elapsed = ((Date.now() - started) / 1000).toFixed(1);
 
   console.log(`\n本週需要注意（${cards.length} 張卡片，${elapsed}s）`);
@@ -53,6 +53,19 @@ async function main() {
     console.log(`${PRIORITY_ICON[c.priority] ?? "•"} ${c.title}  [${c.serviceName}]`);
     console.log(`   ${c.detail}`);
     console.log(`   → 建議：${ACTION_LABEL[c.suggestedAction] ?? c.suggestedAction}`);
+  }
+
+  if (usage) {
+    console.log(
+      `\ntoken: phase1=${usage.phase1Tokens}（${usage.steps} steps）` +
+        ` phase2=${usage.phase2Tokens} 合計=${usage.totalTokens}`,
+    );
+    usage.stepBreakdown.forEach((s, i) => {
+      const tools = s.toolNames.length > 0 ? s.toolNames.join(", ") : "（無 tool call，寫最終文字）";
+      console.log(`  [step ${i + 1}] ${tools}  — ${s.tokens} tokens`);
+    });
+  } else {
+    console.log("\ntoken: 0（閘門擋下，未呼叫 LLM）");
   }
 
   process.exit(0);
