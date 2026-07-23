@@ -4,6 +4,12 @@ import type { LanguageModel } from "ai";
 import { getModel } from "@/lib/llm";
 import { buildAgentTools } from "@/lib/agent/tools";
 import { detectAnomalies, type AnomalyReport } from "@/lib/queries/anomalies";
+import {
+  buildFlowUsage,
+  buildStepBreakdown,
+  tokensOf,
+  type FlowUsage,
+} from "@/lib/agent/usage";
 
 // Section 8a「本週需要注意」— the anomaly-driven alert flow.
 //
@@ -32,6 +38,11 @@ export const AlertCardsSchema = z.object({
 
 export type AlertCard = z.infer<typeof AlertCardSchema>;
 export type AlertCards = z.infer<typeof AlertCardsSchema>;
+
+export type AlertAnalysisResult = {
+  cards: AlertCard[];
+  usage: FlowUsage | null;
+};
 
 // ---------- Pure helpers ----------
 
@@ -107,16 +118,16 @@ const PHASE2_SYSTEM = `把下面這段訂閱分析整理成一組「需要注意
 export async function runWeeklyAlertAnalysis(
   userId: string,
   model: LanguageModel = getModel(),
-): Promise<AlertCards> {
+): Promise<AlertAnalysisResult> {
   const report = await detectAnomalies(userId);
 
   // Gate: nothing detected → no LLM call, clean empty state.
   if (!hasActionableSignal(report)) {
-    return { cards: [] };
+    return { cards: [], usage: null };
   }
 
   // Phase 1: agent investigates with tools, produces a free-text analysis.
-  const { text } = await generateText({
+  const phase1 = await generateText({
     model,
     system: PHASE1_SYSTEM,
     prompt:
@@ -128,13 +139,19 @@ export async function runWeeklyAlertAnalysis(
   });
 
   // Phase 2: constrain the analysis into renderable cards (proven Gemini path).
-  const { object } = await generateObject({
+  const phase2 = await generateObject({
     model,
     schema: AlertCardsSchema,
     system: PHASE2_SYSTEM,
-    prompt: text,
+    prompt: phase1.text,
     temperature: 0,
   });
 
-  return { cards: sortCardsByPriority(object.cards) };
+  const usage = buildFlowUsage(
+    tokensOf(phase1.totalUsage),
+    tokensOf(phase2.usage),
+    buildStepBreakdown(phase1.steps),
+  );
+
+  return { cards: sortCardsByPriority(phase2.object.cards), usage };
 }
