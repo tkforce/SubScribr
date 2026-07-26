@@ -5,7 +5,9 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { StatRow } from "@/app/dashboard/stat-row";
 import { TrendChart } from "@/app/dashboard/trend-chart";
 import { SubscriptionList } from "@/app/dashboard/subscription-list";
+import { AnalysisSection } from "@/app/dashboard/analysis-section";
 import type { SubscriptionView } from "@/lib/queries/subscriptions";
+import type { Analysis } from "@/lib/agent/analysis";
 
 const MOCK_SUBS: SubscriptionView[] = [
   {
@@ -49,6 +51,46 @@ const MOCK_SUBS: SubscriptionView[] = [
   },
 ];
 
+const MOCK_ANALYSIS: Analysis = {
+  headline: "本月支出增加 NT$106，增幅約 9%；有 4 件事需要注意。",
+  insights: [
+    {
+      kind: "alert",
+      priority: "high",
+      serviceName: "Netflix",
+      title: "Netflix 可能已在外部取消",
+      detail: "已 3 個月沒有扣款紀錄，但狀態仍顯示使用中。",
+      suggestion:
+        "到 Netflix 官網確認這筆訂閱是否已經取消，避免帳戶持續被扣款。",
+    },
+    {
+      kind: "alert",
+      priority: "medium",
+      serviceName: "AI 服務",
+      title: "疑似重複訂閱 AI 服務",
+      detail:
+        "您同時訂閱「Cursor Pro」（每月 NT$640）與「Notion AI」（每月 NT$256），合計每月 NT$896。",
+      suggestion:
+        "考量您是否確實需要同時訂閱這兩項服務。若只保留其一，取消 Notion AI 可省下每月 NT$256。",
+    },
+    {
+      kind: "change",
+      priority: "low",
+      serviceName: "Cursor Pro",
+      title: "Cursor Pro 漲價 US$4",
+      detail: "月費從 US$20 調整為 US$24，年化增加約 NT$1,536。",
+    },
+    {
+      kind: "observation",
+      priority: "low",
+      serviceName: "AI 類訂閱",
+      title: "AI 類訂閱佔比三個月內翻倍",
+      detail:
+        "AI 類訂閱從 1 個增加到 3 個，佔月支出從 24% 上升到 52%，是本月支出結構最大的變化。",
+    },
+  ],
+};
+
 const MOCK_TREND = [
   { month: "2026-02", totalTwd: 980 },
   { month: "2026-03", totalTwd: 1230 },
@@ -73,6 +115,12 @@ export default function PreviewPage() {
         totalMonthlyTwd={1286}
         activeCount={3}
         delta={{ deltaTwd: 106, pctChange: 106 / 1180 }}
+      />
+      <AnalysisSection
+        initial={MOCK_ANALYSIS}
+        freshnessLabel="2 小時前分析"
+        stale={false}
+        hasSubscriptions
       />
       <TrendChart points={MOCK_TREND} />
       <SubscriptionList subscriptions={MOCK_SUBS} now={new Date()} />
