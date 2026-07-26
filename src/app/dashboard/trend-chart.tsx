@@ -10,7 +10,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import type { MonthlyTrendPoint } from "@/lib/monthly-trend";
+import type { MonthlyTrendPoint } from "@/lib/queries/monthly-trend";
 
 export function TrendChart({ points }: { points: MonthlyTrendPoint[] }) {
   // Spec: hide the whole card when there is no countable billing spend at all.
