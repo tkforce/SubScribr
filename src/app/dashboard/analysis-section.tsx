@@ -1,10 +1,16 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-import { AlertTriangle, TrendingUp, Lightbulb } from "lucide-react";
+import { useEffect, useId, useRef, useState } from "react";
+import {
+  AlertTriangle,
+  Lightbulb,
+  Loader2,
+  Sparkles,
+  TrendingUp,
+} from "lucide-react";
 import type { Analysis, Insight, AnalysisResult } from "@/lib/agent/analysis";
 import { useAnalysisStream } from "./use-analysis-stream";
-import { AiSectionShell } from "./ai-section-shell";
+import { SectionPanel } from "./section-panel";
 
 const PRIORITY_DOT: Record<Insight["priority"], string> = {
   high: "bg-red-500",
@@ -109,13 +115,37 @@ export function AnalysisSection({
   // a spinner it still reads as current.
   const analysis = streaming ? null : (streamed ?? initial);
 
+  // Collapse state lives here rather than in SectionPanel so the panel can stay
+  // server-safe for the sections that don't collapse.
+  const [open, setOpen] = useState(true);
+  const contentId = useId();
+
+  // This is the only section that opts into collapsing, and the only one with a
+  // live meta readout — the header keeps showing progress and freshness while
+  // collapsed.
+  //
+  // There is no re-analyze button. The analysis is derived from the BillingEvent
+  // log, so re-running it against unchanged data would only reword the same
+  // conclusions — the sync button is the single refresh affordance, and a new
+  // analysis follows a new ingest automatically.
   return (
-    <AiSectionShell
+    <SectionPanel
+      icon={Sparkles}
       title="訂閱分析"
-      streaming={streaming}
-      progress={progress}
-      error={error}
-      freshnessLabel={streamed ? "剛剛分析" : freshnessLabel}
+      toggle={{ open, onToggle: () => setOpen((v) => !v), contentId }}
+      meta={
+        <p role="status" aria-live="polite" className="flex items-center gap-2">
+          {streaming ? (
+            <>
+              <Loader2 className="h-3 w-3 animate-spin" aria-hidden />
+              <span>{progress}</span>
+            </>
+          ) : (
+            <span>{streamed ? "剛剛分析" : freshnessLabel}</span>
+          )}
+        </p>
+      }
+      notice={error && <p className="mt-3 text-xs text-destructive">{error}</p>}
     >
       {streaming ? (
         <AnalysisSkeleton />
@@ -138,6 +168,6 @@ export function AnalysisSection({
           )}
         </div>
       )}
-    </AiSectionShell>
+    </SectionPanel>
   );
 }
