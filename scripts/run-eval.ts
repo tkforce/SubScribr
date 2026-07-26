@@ -1,8 +1,8 @@
 import { readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { basename, join } from "node:path";
-import { evaluate, SCORED_FIELDS, type EvalPair } from "@/lib/eval";
-import type { Extraction } from "@/lib/extraction";
-import type { GoldenEntry } from "@/lib/golden";
+import { evaluate, SCORED_FIELDS, type EvalPair } from "@/lib/eval/harness";
+import type { Extraction } from "@/lib/ingestion/extraction";
+import type { GoldenEntry } from "@/lib/eval/golden";
 
 const DIR = "docs/extractions";
 const DEFAULT_GOLDEN = join(DIR, "golden-set.json");

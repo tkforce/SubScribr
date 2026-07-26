@@ -7,15 +7,15 @@ import { basename, join } from "node:path";
 import pMap from "p-map";
 import { generateObject } from "ai";
 import { getModel } from "@/lib/llm";
-import { isBlacklisted } from "@/lib/blacklist";
+import { isBlacklisted } from "@/lib/ingestion/blacklist";
 import {
   ExtractionSchema,
   PROMPT_VERSION,
   SYSTEM_PROMPT,
   formatUserPrompt,
   type Extraction,
-} from "@/lib/extraction";
-import type { SubscriptionEmail } from "@/lib/gmail";
+} from "@/lib/ingestion/extraction";
+import type { SubscriptionEmail } from "@/lib/ingestion/gmail";
 
 const SAMPLE_DIR = "sampleEmail";
 const OUT_DIR = "docs/extractions";

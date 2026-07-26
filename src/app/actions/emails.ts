@@ -1,7 +1,7 @@
 "use server";
 
 import { auth } from "@/auth";
-import { fetchSubscriptionEmails, type SubscriptionEmail } from "@/lib/gmail";
+import { fetchSubscriptionEmails, type SubscriptionEmail } from "@/lib/ingestion/gmail";
 import { INGEST_WINDOW_DAYS } from "@/lib/constants";
 
 export async function getSubscriptionEmails(): Promise<SubscriptionEmail[]> {

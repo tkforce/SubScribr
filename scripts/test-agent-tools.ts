@@ -8,7 +8,7 @@ import { getModel } from "@/lib/llm";
 // db (and everything that imports it) must be loaded AFTER dotenv config —
 // static imports hoist above the config() calls and Prisma would capture an
 // undefined DATABASE_URL. Type-only imports are erased, so they are safe.
-import type { buildAgentTools } from "@/lib/agent-tools";
+import type { buildAgentTools } from "@/lib/agent/tools";
 
 // Week 6 Day 5: CLI integration test for the first two agent tools against
 // real DB data. Verifies tool choice, argument generation, and multi-step
@@ -21,6 +21,9 @@ const QUESTIONS = [
   "我現在有哪些訂閱？每個月總共花多少錢？",
   "Netflix 最近有漲價嗎？現在的方案價格是多少？",
   "我訂的 Claude 划算嗎？跟官方定價比一下，有沒有更省的方式？",
+  // Week 7 Day 3: calculate_trend + detect_anomalies
+  "我最近半年每個月的訂閱花費怎麼變化？有變多嗎？",
+  "有哪些訂閱是我該注意的？例如快扣款、漲價、或可能重複訂閱的？",
 ];
 
 function parseModel(): ReturnType<typeof getModel> {
@@ -67,7 +70,7 @@ async function ask(tools: ReturnType<typeof buildAgentTools>, question: string) 
 
 async function main() {
   const { db } = await import("@/lib/db");
-  const { buildAgentTools } = await import("@/lib/agent-tools");
+  const { buildAgentTools } = await import("@/lib/agent/tools");
 
   const user = await db.user.findFirst();
   if (!user) {

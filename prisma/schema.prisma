@@ -16,8 +16,8 @@ model User {
 
   subscriptions Subscription[]
   billingEvents BillingEvent[]
-  alerts        Alert[]
   agentTraces   AgentTrace[]
+  analysis      Analysis?
 }
 
 model Subscription {
@@ -86,23 +86,6 @@ model BillingEvent {
   @@index([userId, emailReceivedAt])
 }
 
-model Alert {
-  id     String @id @default(cuid())
-  userId String
-  user   User   @relation(fields: [userId], references: [id])
-
-  type        String
-  priority    String
-  serviceName String
-  payload     Json
-  status      String
-  expiresAt   DateTime?
-
-  createdAt DateTime @default(now())
-
-  @@index([userId, status])
-}
-
 model AgentTrace {
   id     String @id @default(cuid())
   userId String
@@ -117,4 +100,28 @@ model AgentTrace {
   createdAt DateTime @default(now())
 
   @@index([userId, createdAt])
+}
+
+// The AI dashboard section's result. A derived view of the BillingEvent log,
+// exactly like Subscription — one current version per user, replaced whole on
+// each run rather than accumulated. There is no `section` column because 8a
+// and 8b were merged into one analysis.
+//
+// payload is the Zod-validated Analysis object (headline / insights /
+// observation / recommendations). Kept as JSON rather than child tables
+// because it is always read whole to render and never queried by its
+// internals — the opposite of BillingEvent, which exists to be aggregated.
+model Analysis {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id])
+
+  payload Json
+
+  // The user.lastIngestAt this analysis was derived from. Staleness is
+  // "the log moved on since this ran", so this is the only freshness key.
+  basedOnIngestAt DateTime
+  promptVersion   String
+
+  generatedAt DateTime @default(now())
 }
