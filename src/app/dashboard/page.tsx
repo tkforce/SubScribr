@@ -5,30 +5,31 @@ import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { getActiveSubscriptions, computeOverview } from "@/lib/queries/subscriptions";
 import { computeMonthDelta, getMonthlyTrend } from "@/lib/queries/monthly-trend";
-import { db } from "@/lib/db";
+import { getAnalysisState } from "@/lib/queries/analysis";
 import { isIngestStale, formatLastSynced } from "@/lib/ingest-freshness";
+import { formatAnalyzedAt } from "@/lib/analysis-freshness";
 import { StatRow } from "./stat-row";
 import { SubscriptionList } from "./subscription-list";
 import { TrendChart } from "./trend-chart";
 import { AutoSync } from "./auto-sync";
+import { AnalysisSection } from "./analysis-section";
 
 export default async function DashboardPage() {
   const session = await auth();
   if (!session?.user) redirect("/");
 
-  const [subscriptions, trendPoints, user] = session.userId
+  // getAnalysisState also returns lastIngestAt, so it doubles as the user
+  // freshness query the sync banner needs — one round-trip, not two.
+  const [subscriptions, trendPoints, analysisState] = session.userId
     ? await Promise.all([
         getActiveSubscriptions(session.userId),
         getMonthlyTrend(session.userId),
-        db.user.findUnique({
-          where: { id: session.userId },
-          select: { lastIngestAt: true },
-        }),
+        getAnalysisState(session.userId),
       ])
     : [[], [], null];
   const overview = computeOverview(subscriptions);
 
-  const lastIngestAt = user?.lastIngestAt ?? null;
+  const lastIngestAt = analysisState?.lastIngestAt ?? null;
   const now = new Date();
 
   return (
@@ -72,6 +73,15 @@ export default async function DashboardPage() {
         totalMonthlyTwd={overview.totalMonthlyTwd}
         activeCount={overview.activeCount}
         delta={computeMonthDelta(trendPoints)}
+      />
+      <AnalysisSection
+        initial={analysisState?.stored?.analysis ?? null}
+        freshnessLabel={formatAnalyzedAt(
+          analysisState?.stored?.generatedAt ?? null,
+          now,
+        )}
+        stale={analysisState?.stale ?? false}
+        hasSubscriptions={subscriptions.length > 0}
       />
       <TrendChart points={trendPoints} />
       <SubscriptionList subscriptions={subscriptions} now={now} />
