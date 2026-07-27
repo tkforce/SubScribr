@@ -15,8 +15,11 @@ function Stat({
   sub?: string;
   valueClassName?: string;
 }) {
+  // Same weight as SectionPanel: both sit directly on the page background, so
+  // they're the same level of the hierarchy. `bg-card/50` is reserved for what
+  // sits *inside* one of these surfaces (insight cards, subscription rows).
   return (
-    <div className="glass rounded-2xl bg-card px-5 py-4">
+    <div className="glass rounded-2xl bg-card/25 px-5 py-4">
       <div className="text-[11px] uppercase tracking-wide text-muted-foreground">
         {label}
       </div>
