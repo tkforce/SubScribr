@@ -14,6 +14,7 @@ import {
 } from "@/lib/queries/subscriptions";
 import {
   toToolProgressEvent,
+  extractStreamError,
   type StreamChunkLike,
   type ToolProgressEvent,
 } from "@/lib/agent/stream-events";
@@ -236,10 +237,25 @@ export async function runAnalysis(
     stopWhen: stepCountIs(8),
   });
 
+  // Failures arrive as chunks, not as a rejected iteration. Dropping them
+  // (which is what happens if you only look for tool activity) lets the loop
+  // finish normally with zero steps, and the first `await phase1.*` below then
+  // throws "No output generated. Check the stream for errors." — a message
+  // that names neither the cause nor the layer. Capture the real one instead.
+  let fatal: string | null = null;
   for await (const chunk of phase1.fullStream) {
+    const failure = extractStreamError(chunk);
+    if (failure) {
+      // Logged either way: a tool that failed without sinking the run still
+      // explains a thin analysis, and there is no other server-side record.
+      console.error("[analysis] phase 1 stream failure:", failure.message);
+      if (failure.fatal) fatal ??= failure.message;
+      continue;
+    }
     const event = toAnalysisStreamEvent(chunk);
     if (event) onEvent?.(event);
   }
+  if (fatal) throw new Error(`分析中斷：${fatal}`);
 
   onEvent?.({ type: "progress", message: "整理分析結果中..." });
 

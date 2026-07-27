@@ -55,6 +55,9 @@ export async function POST() {
       }
       await saveAgentTrace(userId, usage, "success");
     } catch (err) {
+      // Logged with the full object, not just the message: the SDK's errors
+      // carry a `cause` chain that the user-facing string throws away.
+      console.error("[analysis] run failed:", err);
       await saveAgentTrace(userId, null, "failed").catch(() => {});
       send({
         type: "error",
