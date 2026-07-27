@@ -93,7 +93,7 @@ export function SubscriptionList({
               return (
                 <li
                   key={s.id}
-                  className={`${GRID} glass rounded-xl bg-card/50 px-4 py-3 transition-colors hover:bg-card/90`}
+                  className={`${GRID} glass-row rounded-xl bg-card/50 px-4 py-3 transition-colors hover:bg-card/90`}
                 >
                   <Avatar name={name} />
                   <div className="min-w-0">

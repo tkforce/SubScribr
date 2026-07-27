@@ -27,7 +27,7 @@ const KIND_ICON: Record<Insight["kind"], typeof AlertTriangle> = {
 function InsightRow({ insight }: { insight: Insight }) {
   const Icon = KIND_ICON[insight.kind];
   return (
-    <li className="glass rounded-xl bg-card/50 px-4 py-3">
+    <li className="glass-row rounded-xl bg-card/50 px-4 py-3">
       <div className="flex items-start gap-2.5">
         <span
           className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${PRIORITY_DOT[insight.priority]}`}
@@ -61,7 +61,7 @@ function AnalysisSkeleton() {
       <div className="h-4 w-3/5 rounded bg-muted-foreground/15" />
       <ul className="flex flex-col gap-2">
         {[0, 1, 2].map((i) => (
-          <li key={i} className="glass rounded-xl bg-card/50 px-4 py-3">
+          <li key={i} className="glass-row rounded-xl bg-card/50 px-4 py-3">
             <div className="flex items-start gap-2.5">
               <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-muted-foreground/20" />
               <div className="flex-1">
