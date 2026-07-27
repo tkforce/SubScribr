@@ -35,8 +35,10 @@ export function SectionPanel({
   const [open, setOpen] = useState(defaultOpen);
   const contentId = useId();
 
+  // Vertical padding only: px stays at 5 so section content keeps its left
+  // edge aligned with the stat tiles above, which use the same px-5.
   return (
-    <section className="glass mt-6 rounded-2xl bg-card/25 px-5 py-4">
+    <section className="glass mt-6 rounded-2xl bg-card/25 px-5 py-5">
       <SectionHeader
         icon={icon}
         title={title}
@@ -63,7 +65,7 @@ export function SectionPanel({
         <div className="overflow-hidden">
           {/* Padding rather than margin: a margin would escape the clipped
               track and leave a gap under a collapsed section. */}
-          <div id={contentId} className="pt-4" inert={!open}>
+          <div id={contentId} className="pt-5" inert={!open}>
             {children}
           </div>
         </div>
