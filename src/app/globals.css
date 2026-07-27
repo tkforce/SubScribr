@@ -80,6 +80,14 @@
   --input: oklch(0.929 0.013 255.508);
   --ring: oklch(0.623 0.214 259.815);
   --glass-border: oklch(1 0 0 / 60%);
+  /* Row elevation for tightly stacked list items. Geometry is the binding
+     constraint, not taste: rows sit in an 8px gap, and a shadow reaches about
+     offsetY + blur/2 past the box, so the total must stay well under 8px or
+     neighbouring shadows meet and read as a grey band between every row —
+     exactly what the old 8px/32px `.glass` shadow did here. Layering a
+     contact shadow under an ambient one reads deeper than a single soft
+     shadow of the same reach. */
+  --row-shadow: 0 1px 2px oklch(0 0 0 / 6%), 0 2px 5px oklch(0 0 0 / 7%);
   --glow-1: oklch(0.82 0.07 265 / 70%);
   --glow-2: oklch(0.84 0.08 300 / 60%);
   --glow-3: oklch(0.87 0.06 230 / 55%);
@@ -121,6 +129,7 @@
   --input: oklch(1 0 0 / 15%);
   --ring: oklch(0.623 0.214 259.815);
   --glass-border: oklch(1 0 0 / 12%);
+  --row-shadow: 0 1px 2px oklch(0 0 0 / 28%), 0 2px 5px oklch(0 0 0 / 32%);
   --glow-1: oklch(0.32 0.1 262 / 45%);
   --glow-2: oklch(0.3 0.1 300 / 40%);
   --glow-3: oklch(0.3 0.08 230 / 40%);
@@ -161,6 +170,7 @@
     --input: oklch(1 0 0 / 15%);
     --ring: oklch(0.623 0.214 259.815);
     --glass-border: oklch(1 0 0 / 12%);
+    --row-shadow: 0 1px 2px oklch(0 0 0 / 28%), 0 2px 5px oklch(0 0 0 / 32%);
     --glow-1: oklch(0.32 0.1 262 / 45%);
     --glow-2: oklch(0.3 0.1 300 / 40%);
     --glow-3: oklch(0.3 0.08 230 / 40%);
@@ -205,7 +215,7 @@
   border: 1px solid var(--glass-border);
   -webkit-backdrop-filter: blur(var(--glass-blur));
   backdrop-filter: blur(var(--glass-blur));
-  box-shadow: 0 1px 2px oklch(0 0 0 / 4%);
+  box-shadow: var(--row-shadow);
 }
 
 @layer base {
