@@ -23,8 +23,9 @@
 - Vercel AI SDK + Claude Sonnet，structured output (Zod schema)
 - **LLM 自己判斷 `isSubscriptionRelated`**，false 直接 skip（不入庫、不存任何欄位、只 log）
 - 訂閱信抽取欄位：
-  - 訂閱資訊：rawServiceName、amount、currency、cycle、nextBillingDate、category
-  - Trial 訊號:isTrial、trialEndsAt
+  - 訂閱資訊：rawServiceName、amount、currency、cycle、category
+  - ~~Trial 訊號：isTrial、trialEndsAt~~ —— 已移除，見「明確不做」
+  - ~~nextBillingDate~~ —— 已移除；改在 query 層從 `lastSeenAt + cycle` 推算，見 F6
   - Email signal type：billing / trial_reminder / we_miss_you / price_change / renewal_notice / cancellation
 - **無 confidence 欄位**（用 schema 結構處理品質）
 - **80 筆繁中 golden set**（涵蓋 15 個服務、各 emailSignalType、含 false positive cases）
@@ -74,6 +75,12 @@
 - **使用者編輯**：修改 displayName / category、隱藏訂閱
 - Empty / loading / error states
 - Design system
+- **下次扣款：query 層即時推算，不落地**
+  - `projectNextBilling(lastSeenAt, cycle, now)` 純函式，從最近一封帳單信往後推整數個週期到第一個未來日期
+  - 原本設計是抽取 LLM 讀到的日期，但 `BillingEvent` 沒有這個 column，抽出來就被丟掉 —— 每一筆的 `nextBillingDate` 都是 null，欄位永遠顯示「—」，`upcoming_renewal` 也從來沒觸發過
+  - 選擇推算而非補 schema：**不用 migration、不用重跑 ingest，現有資料立刻有值**
+  - 兩個實作細節：月底要 clamp（1/31 + 1 個月不是 3/3）；每一步從**原始錨點**算而非從上一次結果疊加，否則 2 月被 clamp 成 28 號會把之後每個月都往下拖
+  - 準確度取捨：假設信件寄達日 ≈ 扣款日。`billing` 收據準，`renewal_notice`（「7 天後續約」）會早最多一週
 
 ### F7 — Single-Agent with Tools
 
@@ -119,6 +126,24 @@
 - **分析結果的歷史版本**（一個 user 一筆，覆蓋）
 - **分析的時間過期規則**（ingest freshness gate 已涵蓋）
 - **Phase 2 的 streaming**（輸出太小，成本效益不成立）
+- **Trial 訂閱追蹤**（`isTrial` / `trialEndsAt` / 試用 badge / `trial_ends` 提醒）—— 見下方
+
+**為什麼不追蹤 trial**：
+
+「沒有付費就不列入訂閱管理範圍」這條政策**其實從一開始就寫在 `CONCRETE_SIGNALS` 裡了** —— `deriveSubscriptionState` 只認 billing / price_change / renewal_notice / cancellation，一個信件史只有試用提醒的服務根本不會被 materialize 成 Subscription。
+
+問題是上層還疊了一整套 trial 機制，而它們在這個政策底下**沒有任何可以正常運作的路徑**：
+
+- `isTrial` 是單向閂鎖，設成 true 之後沒有分支能清掉
+- 加上 trial 提醒不是 concrete signal，`isTrial=true` 只可能出現在**同時有扣款證據**的訂閱上 —— 也就是試用**已經轉正**的那些
+- 結果 badge 的語意是反的：真正試用中的訂閱不會出現在列表，轉正後的訂閱永遠掛著「試用」
+- `trialEndsAt` 從來沒有任何程式寫入過，所以 `trial_ends` 提醒是雙重死的
+
+所以這不是砍功能，是**把一個已經做過的決定收尾**。
+
+**但 `trial_reminder` 這個 emailSignalType 要留著**：不追蹤不等於不辨識。拿掉標籤，LLM 就得把「您的試用將於 3 天後結束」歸到別類，最可能是 `renewal_notice` —— 而那**是** concrete signal，會生出一筆金額用猜的幽靈訂閱。它在 fold 裡是 no-op，但作為分類器是承重的，跟 `we_miss_you` 現在的角色一樣。
+
+**代價**：永久放棄「試用快到期，先取消就不會被扣」這類提醒 —— 就訂閱管理而言那大概是價值最高的一種 alert。但要做到它得反轉 `CONCRETE_SIGNALS`（讓試用提醒也能生出訂閱）＋ 加 schema ＋ 重跑 ingest，本來就不在便宜選項的範圍。留給 Phase 2。
 
 **沿用 v7 的不做**：
 
@@ -389,7 +414,7 @@ model Subscription {
   currency        String   // TWD | USD | JPY
   amountInTwd     Decimal  // 統一換算
   cycle           String   // monthly | yearly | quarterly | one-time
-  nextBillingDate DateTime?
+  nextBillingDate DateTime?  // ⚠️ 死欄位：無人寫入、無人讀取，待清（見 Part 9）
   category        String   // entertainment | productivity | ai | cloud | comm | other
 
   status          String   @default("active")  // active | cancelled | hidden
@@ -398,11 +423,10 @@ model Subscription {
 
   source          String   @default("gmail")  // gmail | user_manual
 
-  isTrial         Boolean  @default(false)
-  trialEndsAt     DateTime?
+  // 沒有 isTrial / trialEndsAt：未付費的訂閱不在管理範圍（見「明確不做」）
 
   firstSeenAt     DateTime
-  lastSeenAt      DateTime
+  lastSeenAt      DateTime  // 也是 nextBillingDate 推算的錨點
 
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
@@ -750,7 +774,10 @@ SSE stream → 骨架 + 進度文字 → 卡片
 | 分析中的舊內容            | （未定義）                                            | **清空，改顯示骨架** —— 過期的 headline 不是舊的而是錯的                                 |
 | 區塊可收合                | 無                                                    | **有**（收合時保留標題與新鮮度標籤）                                                     |
 | SSE 實作                  | 未定義                                                | **手刻 ReadableStream + 自訂事件**（AI SDK 的 helper 不是 Node-only 就是綁死 chat 協定） |
-| 面試故事 C / E            | Decision-first UX / Hybrid model                      | **強化：合併的證據鏈、砍 action buttons 的理由、刪掉一整張 table 的 design restraint**   |
+| Trial 追蹤                | `isTrial` / `trialEndsAt` / 試用 badge / `trial_ends` 提醒 | **全部移除**（未付費不列入管理範圍；`CONCRETE_SIGNALS` 本來就已經是這個政策，上層機制無法自洽） |
+| `trial_reminder` signal   | 驅動 `isTrial`                                        | **保留為分類器，fold 裡 no-op** —— 不追蹤 ≠ 不辨識；拿掉標籤會讓試用信被誤歸成 `renewal_notice` 而生出幽靈訂閱 |
+| 下次扣款來源              | LLM 抽取後落地                                        | **query 層從 `lastSeenAt + cycle` 即時推算**（原路徑因 BillingEvent 缺 column 而永遠是 null） |
+| 面試故事 C / E            | Decision-first UX / Hybrid model                      | **強化：合併的證據鏈、砍 action buttons 的理由、刪掉一整張 table 的 design restraint、以及「砍掉兩個永遠不可能正確的欄位」** |
 
 ---
 
@@ -799,11 +826,15 @@ SSE stream → 骨架 + 進度文字 → 卡片
 | **Analysis derive**     | **同上再套一層。分析沒有獨立生命週期 —— 一次 ingest 一個版本，因此連「快取失效」這個概念都不需要**            |
 | **AI 輸出結構**         | **兩個區塊會重述彼此、兩個欄位會重述彼此 —— 解法是讓它們共用同一份清單，而不是寫 prompt 叫模型不要重複**      |
 | **AI 互動面**           | **沒有穩定身分的東西不給生命週期。LLM 卡片無法可靠地跨次辨識，所以不做 dismiss / snooze**                     |
+| **Trial 追蹤**          | **範圍邊界要有單一執行點。「沒付費不算訂閱」寫在 `CONCRETE_SIGNALS`，上層任何 trial 機制都只是繞過它的死碼** |
+| **不追蹤 ≠ 不辨識**     | **`trial_reminder` 留著當分類器。要能穩定排除一類輸入，就得先能穩定認出它 —— 否則它會偽裝成別的類別溜進來**  |
 | Architecture            | Single-agent 而非 multi-agent                                                                                 |
 | RAG                     | 不用，因為知識量太小                                                                                          |
 | Chat UI                 | 不做，因為和 decision-first positioning 衝突                                                                  |
 
-**這份規劃的最大價值不是它做了什麼，而是它選擇不做什麼**。每個被砍掉的功能都對應一個可講的設計取捨 —— v8 甚至砍掉了一張已經 migrate 進 production 的 table。
+**這份規劃的最大價值不是它做了什麼，而是它選擇不做什麼**。每個被砍掉的功能都對應一個可講的設計取捨 —— v8 甚至砍掉了一張已經 migrate 進 production 的 table，以及兩個永遠不可能算對的欄位。
+
+**一個反覆出現的形態**：`nextBillingDate`、`isTrial`、`trialEndsAt` 三個欄位壞掉的方式一模一樣 —— LLM 有抽、schema 沒地方放、derive 沒賦值、UI 照樣顯示。**型別系統完全沒擋住，因為每一層各自看起來都是合法的**。這類 bug 只有在追一條完整的資料路徑時才會現形，不會在 code review 單看一個檔案時被發現。
 
 ---
 
@@ -820,5 +851,15 @@ SSE stream → 骨架 + 進度文字 → 卡片
 | 訂閱編輯功能（displayName / category / 隱藏）未實作 | Week 9 跳過 | F6 |
 | 三層 fallback 未實作 | Week 8 跳過 | F7 |
 | 登入狀態下的完整觸發鏈未經端到端實測 | 驗證環境沒有 Google session | Week 11 |
+| `Subscription.nextBillingDate` 是死欄位（無人寫入、無人讀取） | 改成 query 層推算後遺留；當時的 migration 刻意只涵蓋核可的 trial 兩欄 | 下一支 migration |
+| `drop_subscription_trial_fields` migration 尚未套用到 production | **必須先部署新 code 再跑** —— 反過來會讓舊 code 的 `findMany` 撈不到已 drop 的欄位而炸掉 | 部署後 `prisma migrate deploy` |
 
 **有趣的一點**：`google-ai-plus` / `google-one` 這個 normalize 的 bug，是 agent 自己在分析時當成一則 insight 報出來的 —— 分析結果反過來驗證了資料層的問題。
+
+**已解決（2026-07-27）**：
+
+| 原問題 | 根因 | 處置 |
+| ---- | ---- | -------- |
+| 「下次扣款」欄位全部顯示「—」，`upcoming_renewal` 從未觸發 | LLM 有抽 `nextBillingDate`，但 `BillingEvent` 沒有這個 column，值在落地時被丟棄，derive 也沒有任何分支賦值 | query 層改用 `projectNextBilling(lastSeenAt, cycle, now)` 推算（見 F6） |
+| 「試用」badge 語意相反、`trial_ends` 提醒從未觸發 | `isTrial` 是清不掉的單向閂鎖，且因 trial 非 concrete signal 而只出現在已轉正的訂閱上；`trialEndsAt` 從未被寫入 | 整組移除，trial 追蹤劃出範圍（見「明確不做」） |
+| 訂閱明細 / 分析卡片之間有灰色陰影帶 | `.glass` 的 shadow（8px offset、32px blur）在 `gap-2`（8px）的間隙裡不會衰減完，相鄰卡片陰影重疊 | 新增 `glass-row` utility，陰影縮到能在間隙內收斂 |
