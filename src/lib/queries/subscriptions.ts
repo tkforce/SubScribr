@@ -39,6 +39,60 @@ export function computeOverview(
   return { totalMonthlyTwd: Math.round(total), activeCount: subs.length };
 }
 
+// Months per cycle. Cycles absent here don't recur, so they have no next date.
+const CYCLE_MONTHS: Record<string, number> = {
+  monthly: 1,
+  quarterly: 3,
+  yearly: 12,
+};
+
+// Add months, clamping to the last valid day of the target month. Plain
+// setMonth overflows — Jan 31 + 1 month becomes Mar 3, not Feb 28.
+function addMonths(d: Date, months: number): Date {
+  const target = new Date(d.getFullYear(), d.getMonth() + months, 1);
+  const lastDay = new Date(
+    target.getFullYear(),
+    target.getMonth() + 1,
+    0,
+  ).getDate();
+  target.setDate(Math.min(d.getDate(), lastDay));
+  return target;
+}
+
+// Project the next charge from the most recent billing email plus one cycle.
+//
+// This is a projection, not the date the email stated. The LLM does extract a
+// nextBillingDate, but BillingEvent has no column for it, so it never reaches
+// the derived Subscription — computing it here needs no schema change and
+// works on existing rows. The tradeoff: it assumes the email arrived on the
+// charge date, which holds for `billing` receipts but runs early by up to a
+// week for `renewal_notice` ("renews in 7 days").
+//
+// Steps are measured from the original anchor rather than from the previous
+// result, so a month that clamps (Jan 31 → Feb 28) doesn't drag every later
+// date down with it.
+export function projectNextBilling(
+  lastSeenAt: Date,
+  cycle: string,
+  now: Date,
+): Date | null {
+  const step = CYCLE_MONTHS[cycle];
+  if (!step) return null;
+
+  const startOfDay = (d: Date) =>
+    new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+  const today = startOfDay(now);
+
+  // A charge dated today already happened, so roll strictly past it. The cap
+  // is a guard against a garbage anchor date, not an expected path: even a
+  // decade-stale monthly subscription needs only ~120 steps.
+  for (let k = 1; k <= 1200; k++) {
+    const next = addMonths(lastSeenAt, step * k);
+    if (startOfDay(next) > today) return next;
+  }
+  return null;
+}
+
 export type UpcomingBilling = {
   days: number;
   label: string;
@@ -66,6 +120,7 @@ export function upcomingBilling(
 // Active subscriptions for a user, Decimal→number, sorted by monthly spend desc.
 export async function getActiveSubscriptions(
   userId: string,
+  now: Date = new Date(),
 ): Promise<SubscriptionView[]> {
   const rows = await db.subscription.findMany({
     where: { userId, status: "active" },
@@ -80,7 +135,9 @@ export async function getActiveSubscriptions(
     cycle: r.cycle,
     category: r.category,
     status: r.status,
-    nextBillingDate: r.nextBillingDate,
+    // Projected, not read from the column: nothing ever writes it (see
+    // projectNextBilling), so r.nextBillingDate is null on every row.
+    nextBillingDate: projectNextBilling(r.lastSeenAt, r.cycle, now),
     isTrial: r.isTrial,
   }));
   subs.sort((a, b) => monthlyAmountTwd(b) - monthlyAmountTwd(a));
