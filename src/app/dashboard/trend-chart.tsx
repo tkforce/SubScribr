@@ -25,7 +25,7 @@ export function TrendChart({ points }: { points: MonthlyTrendPoint[] }) {
 
   return (
     <SectionPanel
-      icon={BarChart3}
+      icon={<BarChart3 />}
       title="月支出趨勢"
       meta={`最近 ${data.length} 個月 · 依週期攤平`}
     >

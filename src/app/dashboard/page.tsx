@@ -74,8 +74,10 @@ export default async function DashboardPage() {
         activeCount={overview.activeCount}
         delta={computeMonthDelta(trendPoints)}
       />
-      <TrendChart points={trendPoints} />
-      <SubscriptionList subscriptions={subscriptions} now={now} />
+      {/* Summary → interpretation → evidence. The analysis headline restates
+          the stat row's delta in words, so the two reinforce each other when
+          adjacent; separated by the chart and the table it just read as a
+          repeat of something the user had already scrolled past. */}
       <AnalysisSection
         initial={analysisState?.stored?.analysis ?? null}
         freshnessLabel={formatAnalyzedAt(
@@ -85,6 +87,8 @@ export default async function DashboardPage() {
         stale={analysisState?.stale ?? false}
         hasSubscriptions={subscriptions.length > 0}
       />
+      <TrendChart points={trendPoints} />
+      <SubscriptionList subscriptions={subscriptions} now={now} />
     </main>
   );
 }

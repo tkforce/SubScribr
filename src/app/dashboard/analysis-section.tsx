@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import {
   AlertTriangle,
   Lightbulb,
@@ -115,14 +115,8 @@ export function AnalysisSection({
   // a spinner it still reads as current.
   const analysis = streaming ? null : (streamed ?? initial);
 
-  // Collapse state lives here rather than in SectionPanel so the panel can stay
-  // server-safe for the sections that don't collapse.
-  const [open, setOpen] = useState(true);
-  const contentId = useId();
-
-  // This is the only section that opts into collapsing, and the only one with a
-  // live meta readout — the header keeps showing progress and freshness while
-  // collapsed.
+  // The header keeps showing progress and freshness while collapsed, so a
+  // collapsed section still reports whether its content is being regenerated.
   //
   // There is no re-analyze button. The analysis is derived from the BillingEvent
   // log, so re-running it against unchanged data would only reword the same
@@ -130,9 +124,8 @@ export function AnalysisSection({
   // analysis follows a new ingest automatically.
   return (
     <SectionPanel
-      icon={Sparkles}
+      icon={<Sparkles />}
       title="訂閱分析"
-      toggle={{ open, onToggle: () => setOpen((v) => !v), contentId }}
       meta={
         <p role="status" aria-live="polite" className="flex items-center gap-2">
           {streaming ? (
