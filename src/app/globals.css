@@ -194,6 +194,20 @@
   box-shadow: 0 8px 32px oklch(0 0 0 / 6%);
 }
 
+/* Same frosted surface as `glass`, for rows stacked inside a list with only a
+   `gap-2` (8px) seam between them (subscription rows, insight cards). At that
+   spacing `glass`'s shadow — 8px offset, 32px blur — doesn't fade out before
+   it reaches the next row, so each seam shows a visible dark band where two
+   rows' shadows overlap. This keeps the same border/blur but drops the
+   shadow to a size that resolves within the gap instead of bridging it. */
+@utility glass-row {
+  --glass-blur: 24px;
+  border: 1px solid var(--glass-border);
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  backdrop-filter: blur(var(--glass-blur));
+  box-shadow: 0 1px 2px oklch(0 0 0 / 4%);
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
