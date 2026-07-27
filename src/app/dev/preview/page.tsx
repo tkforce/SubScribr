@@ -21,7 +21,6 @@ const MOCK_SUBS: SubscriptionView[] = [
     category: "entertainment",
     status: "active",
     nextBillingDate: new Date(2026, 6, 15),
-    isTrial: false,
   },
   {
     id: "2",
@@ -34,7 +33,6 @@ const MOCK_SUBS: SubscriptionView[] = [
     category: "ai",
     status: "active",
     nextBillingDate: new Date(2026, 6, 12),
-    isTrial: false,
   },
   {
     id: "3",
@@ -47,7 +45,6 @@ const MOCK_SUBS: SubscriptionView[] = [
     category: "productivity",
     status: "active",
     nextBillingDate: new Date(2027, 1, 3),
-    isTrial: true,
   },
 ];
 

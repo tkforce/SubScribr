@@ -16,8 +16,6 @@ export const SCORED_FIELDS = [
   "category",
   "emailSignalType",
   "nextBillingDate",
-  "isTrial",
-  "trialEndsAt",
 ] as const;
 
 export type BinaryMetrics = {

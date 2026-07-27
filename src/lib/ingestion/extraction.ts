@@ -27,8 +27,6 @@ export const ExtractionSchema = z.object({
       "cancellation",
     ])
     .optional(),
-  isTrial: z.boolean().optional(),
-  trialEndsAt: z.iso.date().optional(),
 });
 
 export type Extraction = z.infer<typeof ExtractionSchema>;

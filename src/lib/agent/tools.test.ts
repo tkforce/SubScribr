@@ -52,8 +52,6 @@ describe("shapeSubscriptionForAgent", () => {
     category: "entertainment",
     status: "active",
     nextBillingDate: new Date("2026-08-01T00:00:00Z"),
-    isTrial: false,
-    trialEndsAt: null,
     lastSeenAt: new Date("2026-07-15T10:00:00Z"),
   };
 
@@ -70,8 +68,6 @@ describe("shapeSubscriptionForAgent", () => {
       category: "entertainment",
       status: "active",
       nextBillingDate: "2026-08-01",
-      isTrial: false,
-      trialEndsAt: null,
       lastSeenAt: "2026-07-15",
     });
   });

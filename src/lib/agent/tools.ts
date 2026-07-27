@@ -79,8 +79,6 @@ type SubscriptionRow = {
   category: string;
   status: string;
   nextBillingDate: Date | null;
-  isTrial: boolean;
-  trialEndsAt: Date | null;
   lastSeenAt: Date;
 };
 
@@ -101,8 +99,6 @@ export function shapeSubscriptionForAgent(row: SubscriptionRow) {
     category: row.category,
     status: row.status,
     nextBillingDate: toIsoDate(row.nextBillingDate),
-    isTrial: row.isTrial,
-    trialEndsAt: toIsoDate(row.trialEndsAt),
     lastSeenAt: toIsoDate(row.lastSeenAt),
   };
 }

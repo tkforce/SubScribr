@@ -19,8 +19,6 @@ function sub(overrides: Partial<AnomalySub>): AnomalySub {
     cycle: "monthly",
     amountInTwd: 390,
     nextBillingDate: null,
-    isTrial: false,
-    trialEndsAt: null,
     lastSeenAt: new Date(2026, 6, 1),
     ...overrides,
   };
@@ -166,28 +164,8 @@ describe("detectUpcomingRenewals", () => {
     ]);
   });
 
-  it("flags an ending trial as trial_ends", () => {
-    const out = detectUpcomingRenewals(
-      [
-        sub({
-          serviceName: "youtube_premium",
-          isTrial: true,
-          trialEndsAt: new Date(2026, 6, 18), // 3 天後
-        }),
-      ],
-      NOW,
-    );
-    expect(out).toEqual([
-      {
-        serviceName: "youtube_premium",
-        kind: "trial_ends",
-        date: "2026-07-18",
-        daysUntil: 3,
-        amountInTwd: 390,
-        cycle: "monthly",
-      },
-    ]);
-  });
+  // No trial_ends case: trials aren't tracked at all. A subscription nobody
+  // has paid for never materializes, so there is nothing to warn about.
 
   it("ignores dates outside the window or in the past", () => {
     const out = detectUpcomingRenewals(

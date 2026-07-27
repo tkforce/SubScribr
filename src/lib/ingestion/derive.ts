@@ -23,8 +23,6 @@ export type DerivedState = {
   category: string;
   status: string;
   cancelledAt: Date | null;
-  isTrial: boolean;
-  trialEndsAt: Date | null;
   nextBillingDate: Date | null;
   firstSeenAt: Date;
   lastSeenAt: Date;
@@ -33,6 +31,14 @@ export type DerivedState = {
 // Signals that prove a billing relationship exists. A service whose entire
 // event log is only soft signals (we_miss_you, trial_reminder) has no
 // evidence of an actual subscription — don't materialize one.
+//
+// This is also why trials aren't tracked at all: a subscription nobody has
+// paid for is out of scope for a spend manager, and this set is where that
+// policy actually lives. `trial_reminder` stays a recognized signal type so
+// those emails can be classified and then ignored — drop the label and the
+// LLM has to file "your trial ends in 3 days" as something else, most likely
+// `renewal_notice`, which *is* concrete and would conjure a phantom
+// subscription with a guessed amount.
 const CONCRETE_SIGNALS = new Set([
   "billing",
   "price_change",
@@ -63,8 +69,6 @@ export function deriveSubscriptionState(
     category: "other",
     status: "active",
     cancelledAt: null,
-    isTrial: false,
-    trialEndsAt: null,
     nextBillingDate: null,
     firstSeenAt: sorted[0].emailReceivedAt,
     lastSeenAt: sorted[sorted.length - 1].emailReceivedAt,
@@ -93,9 +97,9 @@ export function deriveSubscriptionState(
         state.status = "cancelled";
         state.cancelledAt = e.emailReceivedAt;
         break;
+      // Recognized so it can be classified out of the way, but it moves no
+      // state: neither a trial reminder nor a win-back promo is a charge.
       case "trial_reminder":
-        state.isTrial = true;
-        break;
       case "we_miss_you":
         break;
     }
@@ -159,8 +163,6 @@ export async function upsertSubscriptionsForServices(
         category: state.category,
         status: state.status,
         cancelledAt: state.cancelledAt,
-        isTrial: state.isTrial,
-        trialEndsAt: state.trialEndsAt,
         nextBillingDate: state.nextBillingDate,
         firstSeenAt: state.firstSeenAt,
         lastSeenAt: state.lastSeenAt,
@@ -174,8 +176,6 @@ export async function upsertSubscriptionsForServices(
         category: state.category,
         status: state.status,
         cancelledAt: state.cancelledAt,
-        isTrial: state.isTrial,
-        trialEndsAt: state.trialEndsAt,
         nextBillingDate: state.nextBillingDate,
         firstSeenAt: state.firstSeenAt,
         lastSeenAt: state.lastSeenAt,

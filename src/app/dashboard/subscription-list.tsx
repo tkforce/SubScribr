@@ -1,5 +1,4 @@
 import { CreditCard } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import { Avatar } from "./avatar";
 import { SectionPanel } from "./section-panel";
 import { upcomingBilling, type SubscriptionView } from "@/lib/queries/subscriptions";
@@ -99,7 +98,6 @@ export function SubscriptionList({
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
                       <span className="truncate text-sm font-semibold">{name}</span>
-                      {s.isTrial && <Badge variant="secondary">試用</Badge>}
                     </div>
                     <span
                       className={`mt-0.5 inline-flex w-fit items-center rounded-full px-2 py-0.5 text-[11px] font-medium ${CATEGORY_BADGE[s.category] ?? CATEGORY_BADGE.other}`}

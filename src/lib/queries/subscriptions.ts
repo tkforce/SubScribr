@@ -11,7 +11,6 @@ export type SubscriptionView = {
   category: string;
   status: string;
   nextBillingDate: Date | null;
-  isTrial: boolean;
 };
 
 // Normalize any billing cycle to an equivalent monthly TWD figure.
@@ -138,7 +137,6 @@ export async function getActiveSubscriptions(
     // Projected, not read from the column: nothing ever writes it (see
     // projectNextBilling), so r.nextBillingDate is null on every row.
     nextBillingDate: projectNextBilling(r.lastSeenAt, r.cycle, now),
-    isTrial: r.isTrial,
   }));
   subs.sort((a, b) => monthlyAmountTwd(b) - monthlyAmountTwd(a));
   return subs;
