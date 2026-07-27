@@ -39,8 +39,13 @@ export function SectionPanel({
 }) {
   const isOpen = !toggle || toggle.open;
 
+  // `bg-card/25` rather than a full `bg-card`: the panel is a backdrop, and the
+  // cards inside it sit at `bg-card/50`. Keeping the container lighter than its
+  // contents is what makes the two levels read as hierarchy — when both were
+  // pushed the same "raised" direction they just read as overlapping sheets.
+  // Anything at or above the inner /50 merges the layers back together.
   return (
-    <section className="glass mt-6 rounded-2xl bg-card px-5 py-4">
+    <section className="glass mt-6 rounded-2xl bg-card/25 px-5 py-4">
       <SectionHeader
         icon={icon}
         title={title}
