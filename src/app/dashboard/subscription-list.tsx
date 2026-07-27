@@ -1,5 +1,7 @@
+import { CreditCard } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Avatar } from "./avatar";
+import { SectionPanel } from "./section-panel";
 import { upcomingBilling, type SubscriptionView } from "@/lib/queries/subscriptions";
 
 const CYCLE_LABEL: Record<string, string> = {
@@ -56,74 +58,85 @@ export function SubscriptionList({
   subscriptions: SubscriptionView[];
   now: Date;
 }) {
-  if (subscriptions.length === 0) {
-    return (
-      <p className="mt-8 rounded-2xl border border-dashed bg-card/40 px-4 py-10 text-center text-sm text-muted-foreground backdrop-blur-xl">
-        目前沒有訂閱資料。點下方的「Ingest」掃描 Gmail，或前往 /dev 重新掃描。
-      </p>
-    );
-  }
-
+  // Not collapsible: this is the page's primary content, and hiding it behind a
+  // chevron would also dilute the one section where collapsing is meaningful.
   return (
-    <div className="mt-6">
-      <div
-        className={`${GRID} px-3.5 pb-1.5 text-[11px] uppercase tracking-wide text-muted-foreground/60`}
-      >
-        <span />
-        <span>服務</span>
-        <span>金額</span>
-        <span>週期</span>
-        <span className="text-right">下次扣款</span>
-      </div>
-      <ul className="flex flex-col gap-2">
-        {subscriptions.map((s) => {
-          const name = s.displayName ?? s.serviceName;
-          const upcoming = upcomingBilling(s.nextBillingDate, now);
-          return (
-            <li
-              key={s.id}
-              className={`${GRID} glass rounded-xl bg-card/50 px-3.5 py-2.5 transition-colors hover:bg-card/90`}
-            >
-              <Avatar name={name} />
-              <div className="min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className="truncate text-sm font-semibold">{name}</span>
-                  {s.isTrial && <Badge variant="secondary">試用</Badge>}
-                </div>
-                <span
-                  className={`mt-0.5 inline-flex w-fit items-center rounded-full px-2 py-0.5 text-[11px] font-medium ${CATEGORY_BADGE[s.category] ?? CATEGORY_BADGE.other}`}
+    <SectionPanel
+      icon={<CreditCard />}
+      title="訂閱明細"
+      meta={
+        subscriptions.length > 0 ? `${subscriptions.length} 個服務` : undefined
+      }
+    >
+      {subscriptions.length === 0 ? (
+        // Muted one-liner, matching the analysis section's empty state rather
+        // than the full-width dashed box this used when the list sat directly
+        // on the page background.
+        <p className="text-xs text-muted-foreground">
+          目前沒有訂閱資料。點下方的「Ingest」掃描 Gmail，或前往 /dev 重新掃描。
+        </p>
+      ) : (
+        <>
+          <div
+            className={`${GRID} px-4 pb-1.5 text-[11px] uppercase tracking-wide text-muted-foreground/60`}
+          >
+            <span />
+            <span>服務</span>
+            <span>金額</span>
+            <span>週期</span>
+            <span className="text-right">下次扣款</span>
+          </div>
+          <ul className="flex flex-col gap-2">
+            {subscriptions.map((s) => {
+              const name = s.displayName ?? s.serviceName;
+              const upcoming = upcomingBilling(s.nextBillingDate, now);
+              return (
+                <li
+                  key={s.id}
+                  className={`${GRID} glass rounded-xl bg-card/50 px-4 py-3 transition-colors hover:bg-card/90`}
                 >
-                  {CATEGORY_LABEL[s.category] ?? s.category}
-                </span>
-              </div>
-              <div>
-                <div className="text-sm font-semibold tabular-nums">
-                  {formatAmount(s.currency, s.amount)}
-                </div>
-                {s.currency !== "TWD" && (
-                  <div className="text-[11px] text-muted-foreground">
-                    NT$ {Math.round(s.amountInTwd).toLocaleString()}
+                  <Avatar name={name} />
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="truncate text-sm font-semibold">{name}</span>
+                      {s.isTrial && <Badge variant="secondary">試用</Badge>}
+                    </div>
+                    <span
+                      className={`mt-0.5 inline-flex w-fit items-center rounded-full px-2 py-0.5 text-[11px] font-medium ${CATEGORY_BADGE[s.category] ?? CATEGORY_BADGE.other}`}
+                    >
+                      {CATEGORY_LABEL[s.category] ?? s.category}
+                    </span>
                   </div>
-                )}
-              </div>
-              <span className="text-xs text-muted-foreground">
-                {CYCLE_LABEL[s.cycle] ?? s.cycle}
-              </span>
-              <span className="text-right text-xs">
-                {upcoming ? (
-                  <span className="font-medium text-amber-600 dark:text-amber-400">
-                    {formatNextBilling(s.nextBillingDate)} · {upcoming.label}
+                  <div>
+                    <div className="text-sm font-semibold tabular-nums">
+                      {formatAmount(s.currency, s.amount)}
+                    </div>
+                    {s.currency !== "TWD" && (
+                      <div className="text-[11px] text-muted-foreground">
+                        NT$ {Math.round(s.amountInTwd).toLocaleString()}
+                      </div>
+                    )}
+                  </div>
+                  <span className="text-xs text-muted-foreground">
+                    {CYCLE_LABEL[s.cycle] ?? s.cycle}
                   </span>
-                ) : (
-                  <span className="text-muted-foreground">
-                    {formatNextBilling(s.nextBillingDate)}
+                  <span className="text-right text-xs">
+                    {upcoming ? (
+                      <span className="font-medium text-amber-600 dark:text-amber-400">
+                        {formatNextBilling(s.nextBillingDate)} · {upcoming.label}
+                      </span>
+                    ) : (
+                      <span className="text-muted-foreground">
+                        {formatNextBilling(s.nextBillingDate)}
+                      </span>
+                    )}
                   </span>
-                )}
-              </span>
-            </li>
-          );
-        })}
-      </ul>
-    </div>
+                </li>
+              );
+            })}
+          </ul>
+        </>
+      )}
+    </SectionPanel>
   );
 }

@@ -10,7 +10,9 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import { BarChart3 } from "lucide-react";
 import type { MonthlyTrendPoint } from "@/lib/queries/monthly-trend";
+import { SectionPanel } from "./section-panel";
 
 export function TrendChart({ points }: { points: MonthlyTrendPoint[] }) {
   // Spec: hide the whole card when there is no countable billing spend at all.
@@ -22,11 +24,12 @@ export function TrendChart({ points }: { points: MonthlyTrendPoint[] }) {
   }));
 
   return (
-    <div className="glass mt-6 rounded-2xl bg-card px-5 py-4">
-      <div className="text-[11px] uppercase tracking-wide text-muted-foreground">
-        月支出趨勢（攤平）
-      </div>
-      <div className="mt-3 h-48">
+    <SectionPanel
+      icon={<BarChart3 />}
+      title="月支出趨勢"
+      meta={`最近 ${data.length} 個月 · 依週期攤平`}
+    >
+      <div className="h-48">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={data} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
             <defs>
@@ -70,6 +73,6 @@ export function TrendChart({ points }: { points: MonthlyTrendPoint[] }) {
           </BarChart>
         </ResponsiveContainer>
       </div>
-    </div>
+    </SectionPanel>
   );
 }
