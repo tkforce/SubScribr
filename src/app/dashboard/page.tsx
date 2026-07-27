@@ -14,6 +14,13 @@ import { TrendChart } from "./trend-chart";
 import { AutoSync } from "./auto-sync";
 import { AnalysisSection } from "./analysis-section";
 
+// Server Actions inherit the invoking page's limit, and AutoSync triggers
+// ingestSubscriptionEmails from here — a 90-day Gmail window fanned out at
+// pMap concurrency 20, one LLM call per candidate email. A first-time sync is
+// far more work than the ~36s analysis, so the same 60s ceiling applies; the
+// page's own render is a few queries and nowhere near it.
+export const maxDuration = 60;
+
 export default async function DashboardPage() {
   const session = await auth();
   if (!session?.user) redirect("/");

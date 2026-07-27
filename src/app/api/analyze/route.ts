@@ -11,6 +11,16 @@ import {
   saveAgentTrace,
 } from "@/lib/queries/analysis";
 
+// A two-phase agent run measured at ~36s against real data (7 tool calls in
+// step 1, then the write-up), which is comfortably past Vercel's 10–15s
+// default. 60 is the Hobby ceiling and well inside Pro's 300, so it holds on
+// either plan; raise it only if phase 1 starts needing more steps.
+//
+// Without this the platform kills the function mid-stream: the SSE connection
+// just ends with no `done` event, which reads as an analysis that spins
+// forever rather than as a failure.
+export const maxDuration = 60;
+
 // The AI dashboard section's streaming endpoint: progress events while the
 // agent works, then a final `done` event carrying the structured analysis.
 //
