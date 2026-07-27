@@ -41,8 +41,10 @@ model Subscription {
 
   source String @default("gmail")
 
-  isTrial     Boolean   @default(false)
-  trialEndsAt DateTime?
+  // No isTrial / trialEndsAt: a subscription nobody has paid for is out of
+  // scope. deriveSubscriptionState already refuses to materialize one from
+  // trial reminders alone, so these columns only ever held a stuck flag and
+  // a null date.
 
   firstSeenAt DateTime
   lastSeenAt  DateTime

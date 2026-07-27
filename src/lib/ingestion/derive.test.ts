@@ -133,11 +133,14 @@ describe("deriveSubscriptionState", () => {
     expect(s!.lastSeenAt).toEqual(new Date("2026-05-15"));
   });
 
-  it("trial_reminder sets isTrial=true", () => {
+  it("trial_reminder moves no state; a later billing is what counts", () => {
+    // Trials aren't tracked: the reminder is recognized so it can be ignored,
+    // and the subscription reflects only the charge that followed it.
     const s = deriveSubscriptionState([
       ev({
         emailReceivedAt: new Date("2026-01-01"),
         emailSignalType: "trial_reminder",
+        amount: 0,
       }),
       ev({
         emailReceivedAt: new Date("2026-01-15"),
@@ -145,7 +148,8 @@ describe("deriveSubscriptionState", () => {
         amount: 390,
       }),
     ]);
-    expect(s!.isTrial).toBe(true);
+    expect(s!.amount).toBe(390);
+    expect(s!.status).toBe("active");
   });
 
   it("we_miss_you alone produces no subscription (no concrete signal)", () => {

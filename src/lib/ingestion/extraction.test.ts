@@ -11,7 +11,6 @@ describe("ExtractionSchema", () => {
     cycle: "monthly" as const,
     category: "ai" as const,
     emailSignalType: "billing" as const,
-    isTrial: false,
   };
 
   it("rejects amount of zero", () => {
@@ -86,8 +85,7 @@ describe("llmExtract", () => {
       cycle: "monthly",
       category: "ai",
       emailSignalType: "billing",
-      isTrial: false,
-    });
+      });
     const result = await llmExtract(email, model);
     expect(result).not.toBeNull();
     expect(result!.rawServiceName).toBe("Cursor Pro");

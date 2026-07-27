@@ -24,8 +24,6 @@ export type AnomalySub = {
   cycle: string;
   amountInTwd: number;
   nextBillingDate: Date | null;
-  isTrial: boolean;
-  trialEndsAt: Date | null;
   lastSeenAt: Date;
 };
 
@@ -147,15 +145,15 @@ export const UPCOMING_WINDOW_DAYS = 14;
 
 export type UpcomingItem = {
   serviceName: string;
-  kind: "renewal" | "trial_ends";
+  kind: "renewal";
   date: string;
   daysUntil: number;
   amountInTwd: number;
   cycle: string;
 };
 
-// Renewals and trial expiries landing within the window. Past dates are stale
-// data, not an imminent charge — excluded, same rule as upcomingBilling.
+// Renewals landing within the window. Past dates are stale data, not an
+// imminent charge — excluded, same rule as upcomingBilling.
 export function detectUpcomingRenewals(
   subs: AnomalySub[],
   now: Date,
@@ -177,7 +175,6 @@ export function detectUpcomingRenewals(
       });
     };
     push("renewal", s.nextBillingDate);
-    if (s.isTrial) push("trial_ends", s.trialEndsAt);
   }
   out.sort((a, b) => a.daysUntil - b.daysUntil);
   return out;
@@ -218,8 +215,6 @@ export async function detectAnomalies(
     // stored column is never written, which is why upcoming_renewal never
     // fired before.
     nextBillingDate: projectNextBilling(r.lastSeenAt, r.cycle, now),
-    isTrial: r.isTrial,
-    trialEndsAt: r.trialEndsAt,
     lastSeenAt: r.lastSeenAt,
   }));
 

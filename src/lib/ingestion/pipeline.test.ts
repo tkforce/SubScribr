@@ -33,8 +33,7 @@ describe("processEmail", () => {
       cycle: "monthly",
       category: "ai",
       emailSignalType: "billing",
-      isTrial: false,
-    });
+      });
     const out = await processEmail(email, "user-1", model);
     expect(out.kind).toBe("inserted");
     if (out.kind !== "inserted") return;
