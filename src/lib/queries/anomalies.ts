@@ -1,5 +1,8 @@
 import { db } from "@/lib/db";
-import { monthlyAmountTwd } from "@/lib/queries/subscriptions";
+import {
+  monthlyAmountTwd,
+  projectNextBilling,
+} from "@/lib/queries/subscriptions";
 import {
   computeServiceHistory,
   localIsoDate,
@@ -211,7 +214,10 @@ export async function detectAnomalies(
     status: r.status,
     cycle: r.cycle,
     amountInTwd: Number(r.amountInTwd),
-    nextBillingDate: r.nextBillingDate,
+    // Projected from lastSeenAt + cycle, same as the dashboard list — the
+    // stored column is never written, which is why upcoming_renewal never
+    // fired before.
+    nextBillingDate: projectNextBilling(r.lastSeenAt, r.cycle, now),
     isTrial: r.isTrial,
     trialEndsAt: r.trialEndsAt,
     lastSeenAt: r.lastSeenAt,
