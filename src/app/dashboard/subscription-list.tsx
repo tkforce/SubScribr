@@ -62,7 +62,7 @@ export function SubscriptionList({
   // chevron would also dilute the one section where collapsing is meaningful.
   return (
     <SectionPanel
-      icon={CreditCard}
+      icon={<CreditCard />}
       title="訂閱明細"
       meta={
         subscriptions.length > 0 ? `${subscriptions.length} 個服務` : undefined
