@@ -74,6 +74,8 @@ export default async function DashboardPage() {
         activeCount={overview.activeCount}
         delta={computeMonthDelta(trendPoints)}
       />
+      <TrendChart points={trendPoints} />
+      <SubscriptionList subscriptions={subscriptions} now={now} />
       <AnalysisSection
         initial={analysisState?.stored?.analysis ?? null}
         freshnessLabel={formatAnalyzedAt(
@@ -83,8 +85,6 @@ export default async function DashboardPage() {
         stale={analysisState?.stale ?? false}
         hasSubscriptions={subscriptions.length > 0}
       />
-      <TrendChart points={trendPoints} />
-      <SubscriptionList subscriptions={subscriptions} now={now} />
     </main>
   );
 }
