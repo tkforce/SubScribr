@@ -6,7 +6,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import {
   getActiveSubscriptions,
   computeOverview,
-  countBillingEvents,
+  countAllSubscriptions,
 } from "@/lib/queries/subscriptions";
 import { computeMonthDelta, getMonthlyTrend } from "@/lib/queries/monthly-trend";
 import { getAnalysisState } from "@/lib/queries/analysis";
@@ -40,13 +40,13 @@ export default async function DashboardPage() {
 
   // getAnalysisState also returns lastIngestAt, so it doubles as the user
   // freshness query the sync banner needs — one round-trip, not two.
-  const [subscriptions, trendPoints, analysisState, billingEventCount] =
+  const [subscriptions, trendPoints, analysisState, subscriptionCount] =
     session.userId
       ? await Promise.all([
           getActiveSubscriptions(session.userId),
           getMonthlyTrend(session.userId),
           getAnalysisState(session.userId),
-          countBillingEvents(session.userId),
+          countAllSubscriptions(session.userId),
         ])
       : [[], [], null, 0];
   const overview = computeOverview(subscriptions);
@@ -62,7 +62,7 @@ export default async function DashboardPage() {
   // reconnect banner rather than a screen whose only action would fail.
   const view =
     session.userId && !connectionExpired
-      ? chooseDashboardView({ lastIngestAt, billingEventCount })
+      ? chooseDashboardView({ lastIngestAt, subscriptionCount })
       : "dashboard";
 
   // Never synced: there is no dashboard to draw yet, only zeros the first sync
@@ -153,11 +153,7 @@ export default async function DashboardPage() {
         <TrendChart points={trendPoints} />
       </SyncAware>
       <SyncAware empty={isEmpty} fallback={<SubscriptionListSkeleton />}>
-        <SubscriptionList
-          subscriptions={subscriptions}
-          now={now}
-          billingEventCount={billingEventCount}
-        />
+        <SubscriptionList subscriptions={subscriptions} now={now} />
       </SyncAware>
       </>
       )}

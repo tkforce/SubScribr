@@ -116,11 +116,18 @@ export function upcomingBilling(
   return { days, label };
 }
 
-// Distinguishes the two ways a subscription list can be empty: no billing mail
-// was ever recognised, versus mail was recognised but none of it added up to a
-// recurring service (a log of nothing but trial reminders, say). The counters
-// from a live run are gone after the page refreshes, so the empty state reads
-// this instead — it is derived from stored rows and therefore survives reloads.
+// Every Subscription row regardless of status, which is the test for "is there
+// anything on this dashboard at all". Deliberately unfiltered: an account whose
+// subscriptions are all cancelled has an empty list but a real trend chart, so
+// it still belongs on the dashboard rather than the nothing-found screen.
+export async function countAllSubscriptions(userId: string): Promise<number> {
+  return db.subscription.count({ where: { userId } });
+}
+
+// Distinguishes the two ways a subscription list can be empty: nothing is
+// active right now, versus nothing was ever recognised. The counters from a
+// live run are gone after the page refreshes, so the empty state reads this
+// instead — it comes from stored rows and therefore survives reloads.
 export async function countBillingEvents(userId: string): Promise<number> {
   return db.billingEvent.count({ where: { userId } });
 }

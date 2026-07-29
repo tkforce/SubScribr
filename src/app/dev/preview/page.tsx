@@ -138,21 +138,10 @@ export default function PreviewPage() {
         hasSubscriptions
       />
       <TrendChart points={MOCK_TREND} />
-      <SubscriptionList
-        subscriptions={MOCK_SUBS}
-        now={new Date()}
-        billingEventCount={MOCK_SUBS.length}
-      />
+      <SubscriptionList subscriptions={MOCK_SUBS} now={new Date()} />
 
-      <Divider label="空狀態：掃描過但沒有訂閱" />
-      <SubscriptionList
-        subscriptions={[]}
-        now={new Date()}
-        billingEventCount={4}
-      />
-
-      <Divider label="空狀態：完全沒有帳單信件" />
-      <SubscriptionList subscriptions={[]} now={new Date()} billingEventCount={0} />
+      <Divider label="訂閱全部已取消或隱藏" />
+      <SubscriptionList subscriptions={[]} now={new Date()} />
 
       <Divider label="同步中（無既有資料）" />
       <StatRowSkeleton />
