@@ -1,21 +1,22 @@
 "use client";
 
-import {
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-  useTransition,
-} from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, RefreshCw } from "lucide-react";
-import { ingestSubscriptionEmails } from "@/app/actions/ingest";
 import { Button } from "@/components/ui/button";
+import { useEventStream } from "./use-event-stream";
+import { useSyncStatus } from "./sync-status";
+import { describeIngestOutcome } from "@/lib/ingest-outcome";
+import type { IngestStats } from "@/lib/ingestion/pipeline";
+
+type IngestDone = { stats: IngestStats | null };
 
 // Fires a background ingest on mount when the server marked data stale, then
-// refreshes the RSC payload. Stale data stays visible and interactive
-// throughout (stale-while-revalidate). Also hosts the manual "sync now"
-// button, which forces past the server-side freshness gate.
+// refreshes the RSC payload. Also hosts the manual "sync now" button, which
+// forces past the server-side freshness gate.
+//
+// Existing data stays visible and interactive throughout; sections with
+// nothing to show swap to skeletons instead (see SyncAware).
 export function AutoSync({
   stale,
   lastSyncedLabel,
@@ -27,33 +28,39 @@ export function AutoSync({
   // and disable the manual button. The dashboard banner owns the messaging.
   connectionExpired?: boolean;
 }) {
-  const [isSyncing, startTransition] = useTransition();
-  const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
+  const { setSyncing } = useSyncStatus();
+  const { status, progress, result, error, run } = useEventStream<IngestDone>(
+    "/api/ingest",
+    "準備同步⋯",
+  );
+
   // Guards against StrictMode double-mount in dev; after a successful sync
   // router.refresh() re-renders us with stale=false, so no re-fire either way.
   const fired = useRef(false);
-  const router = useRouter();
 
-  const runSync = useCallback(
-    (options?: { force: boolean }) => {
-      setError(null);
-      startTransition(async () => {
-        try {
-          await ingestSubscriptionEmails(options);
-          router.refresh();
-        } catch (e) {
-          setError(e instanceof Error ? e.message : "Sync failed");
-        }
-      });
-    },
-    [router, startTransition],
-  );
+  const isSyncing = status === "streaming";
+
+  useEffect(() => {
+    setSyncing(isSyncing);
+  }, [isSyncing, setSyncing]);
 
   useEffect(() => {
     if (!stale || connectionExpired || fired.current) return;
     fired.current = true;
-    runSync();
-  }, [stale, connectionExpired, runSync]);
+    run();
+  }, [stale, connectionExpired, run]);
+
+  useEffect(() => {
+    if (status === "done") router.refresh();
+  }, [status, router]);
+
+  // A run can succeed as a request and still be worth reporting — most of all
+  // when extraction failed on every email, which would otherwise reach the
+  // user as an ordinary empty dashboard.
+  const warning = warningFrom(result);
+
+  const runManually = useCallback(() => run({ force: true }), [run]);
 
   return (
     <div className="flex items-center gap-1">
@@ -65,7 +72,7 @@ export function AutoSync({
         {isSyncing ? (
           <>
             <Loader2 className="h-3 w-3 animate-spin" aria-hidden />
-            <span>Syncing…</span>
+            <span className="tabular-nums">{progress}</span>
           </>
         ) : (
           <span>{lastSyncedLabel}</span>
@@ -73,6 +80,7 @@ export function AutoSync({
         {error && !connectionExpired && (
           <span className="text-destructive">{error}</span>
         )}
+        {!error && warning && <span className="text-destructive">{warning}</span>}
       </p>
       <Button
         variant="ghost"
@@ -80,10 +88,16 @@ export function AutoSync({
         size="icon-xs"
         aria-label="Sync now"
         disabled={isSyncing || connectionExpired}
-        onClick={() => runSync({ force: true })}
+        onClick={runManually}
       >
         <RefreshCw aria-hidden />
       </Button>
     </div>
   );
+}
+
+function warningFrom(result: IngestDone | null): string | null {
+  if (!result?.stats) return null;
+  const outcome = describeIngestOutcome(result.stats);
+  return outcome.tone === "warning" ? outcome.message : null;
 }
