@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { getSubscriptionEmails } from "@/app/actions/emails";
-import { ingestSubscriptionEmails } from "@/app/actions/ingest";
+import { useEventStream } from "@/app/dashboard/use-event-stream";
 import type { IngestStats } from "@/lib/ingestion/pipeline";
 import type { SubscriptionEmail } from "@/lib/ingestion/gmail";
 import { Button } from "@/components/ui/button";
@@ -27,10 +27,19 @@ export function DevTools() {
   const [emails, setEmails] = useState<SubscriptionEmail[]>([]);
   const [selected, setSelected] = useState<SubscriptionEmail | null>(null);
   const [isPending, startTransition] = useTransition();
-  const [isIngesting, startIngestTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [hasFetched, setHasFetched] = useState(false);
-  const [ingestStats, setIngestStats] = useState<IngestStats | null>(null);
+
+  // Same streaming endpoint the dashboard uses, so this page exercises the
+  // real path rather than a parallel one that could drift from it.
+  const ingest = useEventStream<{ stats: IngestStats | null }>(
+    "/api/ingest",
+    "準備同步⋯",
+  );
+  const isIngesting = ingest.status === "streaming";
+  const ingestStats = ingest.result?.stats ?? null;
+  // Both surfaces share one error line; no need to mirror one into the other.
+  const shownError = error ?? ingest.error;
 
   const onFetch = () => {
     setError(null);
@@ -47,15 +56,7 @@ export function DevTools() {
 
   const onIngest = () => {
     setError(null);
-    setIngestStats(null);
-    startIngestTransition(async () => {
-      try {
-        const result = await ingestSubscriptionEmails({ force: true });
-        if (!result.skipped) setIngestStats(result.stats);
-      } catch (e) {
-        setError(e instanceof Error ? e.message : "Unknown error");
-      }
-    });
+    ingest.run({ force: true });
   };
 
   return (
@@ -71,7 +72,7 @@ export function DevTools() {
           onClick={onIngest}
           disabled={isIngesting}
         >
-          {isIngesting ? "Ingesting…" : `Ingest ${INGEST_WINDOW_DAYS}d to DB`}
+          {isIngesting ? ingest.progress : `Ingest ${INGEST_WINDOW_DAYS}d to DB`}
         </Button>
         {emails.length > 0 && (
           <>
@@ -89,12 +90,14 @@ export function DevTools() {
             </Button>
           </>
         )}
-        {hasFetched && !error && (
+        {hasFetched && !shownError && (
           <span className="text-sm text-muted-foreground">
             {emails.length} 封
           </span>
         )}
-        {error && <span className="text-sm text-destructive">{error}</span>}
+        {shownError && (
+          <span className="text-sm text-destructive">{shownError}</span>
+        )}
       </div>
 
       {ingestStats && (
@@ -146,7 +149,7 @@ export function DevTools() {
         </div>
       )}
 
-      {hasFetched && emails.length === 0 && !error && (
+      {hasFetched && emails.length === 0 && !shownError && (
         <p className="mt-6 text-sm text-muted-foreground">
           No subscription emails found in the past 90 days.
         </p>

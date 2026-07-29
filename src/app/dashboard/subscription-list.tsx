@@ -71,8 +71,17 @@ export function SubscriptionList({
         // Muted one-liner, matching the analysis section's empty state rather
         // than the full-width dashed box this used when the list sat directly
         // on the page background.
+        //
+        // An account with nothing at all never reaches this page — it gets the
+        // EmptyInbox screen instead. So the only way to be here with an empty
+        // list is having had subscriptions that are now all cancelled or
+        // hidden, and the copy says that rather than "nothing found".
+        //
+        // (The previous copy pointed at an "Ingest" button that isn't on this
+        // page and at /dev, a developer page: two things a user cannot act on,
+        // while leaving unmentioned the one they can.)
         <p className="text-xs text-muted-foreground">
-          目前沒有訂閱資料。點下方的「Ingest」掃描 Gmail，或前往 /dev 重新掃描。
+          目前沒有使用中的訂閱。已取消或隱藏的訂閱不會顯示在這裡。
         </p>
       ) : (
         <>
