@@ -6,7 +6,7 @@ import { StatRow } from "@/app/dashboard/stat-row";
 import { TrendChart } from "@/app/dashboard/trend-chart";
 import { SubscriptionList } from "@/app/dashboard/subscription-list";
 import { AnalysisSection } from "@/app/dashboard/analysis-section";
-import { FirstRunScreen } from "@/app/dashboard/first-run-sync";
+import { SyncScreen } from "@/app/dashboard/sync-screen";
 import {
   StatRowSkeleton,
   TrendChartSkeleton,
@@ -160,12 +160,30 @@ export default function PreviewPage() {
       <SubscriptionListSkeleton />
 
       <Divider label="首次登入：同步進行中" />
-      <FirstRunScreen progress="AI 判讀中⋯128 / 312" failure={null} />
+      <SyncScreen state={{ kind: "working", progress: "AI 判讀中⋯128 / 312" }} />
 
       <Divider label="首次登入：判讀失敗" />
-      <FirstRunScreen
-        progress=""
-        failure="280 封信件判讀失敗，可能是暫時性問題，稍後重新同步即可。"
+      <SyncScreen
+        state={{
+          kind: "failed",
+          message: "280 封信件判讀失敗，可能是暫時性問題，稍後重新同步即可。",
+        }}
+        action={{ label: "重新嘗試" }}
+      />
+
+      <Divider label="掃描過但完全沒有訂閱信件" />
+      <SyncScreen
+        state={{ kind: "empty", note: "Last synced: 3m ago" }}
+        action={{ label: "重新掃描 Gmail" }}
+      />
+
+      <Divider label="沒有訂閱：剛按過重新掃描" />
+      <SyncScreen
+        state={{
+          kind: "empty",
+          note: "剛剛重新掃描過，仍然沒有找到訂閱帳單信件。",
+        }}
+        action={{ label: "掃描中⋯", disabled: true }}
       />
     </main>
   );

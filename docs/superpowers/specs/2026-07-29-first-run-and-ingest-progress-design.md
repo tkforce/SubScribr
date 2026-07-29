@@ -37,16 +37,23 @@
 
 ### 1. 狀態機與畫面歸屬
 
-判斷鍵用既有的 `lastIngestAt`，沿用專案已經用過兩次的「server 判斷、client 完成」模式：
+判斷鍵是既有的 `lastIngestAt` 與 BillingEvent 筆數，沿用專案已經用過兩次的「server 判斷、client 完成」模式。純函式 `chooseDashboardView()` 決定三選一：
 
 ```
-lastIngestAt === null  → 整頁 <FirstRunSync />（不渲染 dashboard 本體）
-lastIngestAt !== null  → 正常 dashboard（現有 AutoSync 路徑）
+lastIngestAt === null      → <FirstRunSync />   整頁，首次同步
+billingEventCount === 0    → <EmptyInbox />     什麼都沒找到
+否則                        → dashboard 本體
 ```
 
-`FirstRunSync` 完成後呼叫 `router.refresh()`：`lastIngestAt` 此時已寫入，同一次導覽內直接轉為正常 dashboard。不需要新路由、不需要 callback 串接、不需要新的 DB 欄位。
+**順序不能反**：任何帳號在第一次同步前筆數都是 0，先看筆數會在還沒找之前就宣告「找不到」。
 
-整頁畫面只在帳號生命週期出現一次。
+`FirstRunSync` 完成後呼叫 `router.refresh()`，由 server 重新決定要交給哪一個 view。不需要新路由、不需要 callback 串接、不需要新的 DB 欄位。
+
+**為什麼 empty 用 BillingEvent 筆數而不是訂閱數**：「有帳單信件但都不構成定期訂閱」的帳號，趨勢圖和歷史是有內容的，整頁接管會把真實資料藏起來。只有「完全沒有」才值得接管。
+
+**`EmptyInbox` 保留 header**：它跟 `FirstRunSync` 不同，不是幾十秒就過去的過場，而是會持續好幾次造訪的狀態。沒有 Sign out 就是把使用者關在裡面。
+
+它也不是死路 —— stale 時一樣會自動掃描，這是使用者第一筆訂閱被發現的方式，不必靠他自己想到要按按鈕。手動按鈕在整趟往返期間 disable，不只是點擊當下，否則一個沒耐心的第二次點擊會再排一次 56 秒的掃描。
 
 ### 2. `/api/ingest`：SSE 化
 
@@ -146,7 +153,9 @@ route 本身鏡像 `/api/analyze`：session 取 `userId`（絕不從 request bod
 - **持久**：`countBillingEvents(userId)` 由 server 查，重新整理也還在，負責分辨「完全沒找到」與「找到了但不構成訂閱」。
 - **當次**：`describeIngestOutcome(stats)` 只負責判讀失敗這種**不會留下痕跡**的故障。而且 `FirstRunSync` 遇到 warning 時**不 refresh**，停在原地把話說完——否則就會 refresh 進一個「沒有訂閱」的畫面，正好是本 spec 要消滅的那種偽裝。
 
-**3. `FirstRunScreen` 從 `FirstRunSync` 拆出來。** 純呈現層，讓 `/dev/preview` 不需要 Google session 就能看到兩種狀態。這條路徑先前從未被眼睛看過（design v8 Part 9 列的已知問題之一）。順帶抓到一個 bug：原本 `FirstRunScreen` 自帶 `<main>`，嵌進 preview 會變成 `<main>` 裡包 `<main>`。landmark 現在由容器負責。
+**2b. 零結果從「dashboard 的空狀態」升級成獨立畫面。** 原設計讓 `SubscriptionList` 用一行文案交代，但實際跑起來看到的是：四張歸零的卡片、一張空表格、一個空的分析區塊，全部圍繞著沒有內容排列。改成 `EmptyInbox` 整頁接管，只留一句話和一個動作。`SubscriptionList` 的分情境文案仍然保留 —— 它服務的是「有帳單但不構成訂閱」那種帳號，那種帳號還是走 dashboard。
+
+**3. `FirstRunScreen` 從 `FirstRunSync` 拆出來，再一般化成 `SyncScreen`。** 純呈現層，讓 `/dev/preview` 不需要 Google session 就能看到兩種狀態。這條路徑先前從未被眼睛看過（design v8 Part 9 列的已知問題之一）。順帶抓到一個 bug：原本 `FirstRunScreen` 自帶 `<main>`，嵌進 preview 會變成 `<main>` 裡包 `<main>`。landmark 現在由容器負責。
 
 ## 已知風險（不在本 spec 解決）
 

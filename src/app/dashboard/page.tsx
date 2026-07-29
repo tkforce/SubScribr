@@ -18,7 +18,9 @@ import { TrendChart } from "./trend-chart";
 import { AutoSync } from "./auto-sync";
 import { AnalysisSection } from "./analysis-section";
 import { FirstRunSync } from "./first-run-sync";
+import { EmptyInbox } from "./empty-inbox";
 import { SyncStatusProvider, SyncAware } from "./sync-status";
+import { chooseDashboardView } from "@/lib/dashboard-view";
 import {
   StatRowSkeleton,
   TrendChartSkeleton,
@@ -52,16 +54,21 @@ export default async function DashboardPage() {
   const lastIngestAt = analysisState?.lastIngestAt ?? null;
   const now = new Date();
 
+  const connectionExpired = session.error === "RefreshAccessTokenError";
+  const stale = session.userId ? isIngestStale(lastIngestAt, now) : false;
+  const lastSyncedLabel = formatLastSynced(lastIngestAt, now);
+
+  // An expired Gmail connection can't sync, so it must reach the dashboard's
+  // reconnect banner rather than a screen whose only action would fail.
+  const view =
+    session.userId && !connectionExpired
+      ? chooseDashboardView({ lastIngestAt, billingEventCount })
+      : "dashboard";
+
   // Never synced: there is no dashboard to draw yet, only zeros the first sync
   // hasn't finished disproving. Show the sync itself instead, full-page. Once
   // it stamps lastIngestAt this branch is never taken again for this account.
-  if (
-    session.userId &&
-    lastIngestAt === null &&
-    session.error !== "RefreshAccessTokenError"
-  ) {
-    return <FirstRunSync />;
-  }
+  if (view === "first-run") return <FirstRunSync />;
 
   const isEmpty = subscriptions.length === 0;
 
@@ -74,11 +81,15 @@ export default async function DashboardPage() {
           <p className="text-sm text-muted-foreground">
             Signed in as {session.user.email}
           </p>
-          <AutoSync
-            stale={session.userId ? isIngestStale(lastIngestAt, now) : false}
-            lastSyncedLabel={formatLastSynced(lastIngestAt, now)}
-            connectionExpired={session.error === "RefreshAccessTokenError"}
-          />
+          {/* The empty view owns its own scan button and freshness line, so a
+              second one here would be two controls for one action. */}
+          {view === "dashboard" && (
+            <AutoSync
+              stale={stale}
+              lastSyncedLabel={lastSyncedLabel}
+              connectionExpired={connectionExpired}
+            />
+          )}
         </div>
         <div className="flex items-center gap-2">
           <ThemeToggle />
@@ -90,7 +101,7 @@ export default async function DashboardPage() {
         </div>
       </header>
 
-      {session.error === "RefreshAccessTokenError" && (
+      {connectionExpired && (
         <div className="mb-6 flex items-center justify-between gap-3 rounded-md bg-destructive/10 px-3 py-2">
           <p className="text-xs text-destructive">
             Your Gmail connection expired — reconnect to resume syncing.
@@ -103,6 +114,18 @@ export default async function DashboardPage() {
         </div>
       )}
 
+      {/* Nothing was found at all: a row of zeroed cards and an empty table is
+          furniture arranged around nothing, so the body becomes the one thing
+          worth saying and the one thing worth doing. The header stays — this
+          state persists across visits, and it must not trap the user. */}
+      {view === "empty" ? (
+        <EmptyInbox
+          stale={stale}
+          lastSyncedLabel={lastSyncedLabel}
+          connectionExpired={connectionExpired}
+        />
+      ) : (
+      <>
       {/* Zeros are only worth showing once a sync has finished deciding they
           are the answer. While one is running with nothing on screen yet, the
           skeleton says "not known" where NT$ 0 would say "none". */}
@@ -136,6 +159,8 @@ export default async function DashboardPage() {
           billingEventCount={billingEventCount}
         />
       </SyncAware>
+      </>
+      )}
     </main>
     </SyncStatusProvider>
   );
