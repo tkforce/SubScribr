@@ -6,6 +6,12 @@ import { StatRow } from "@/app/dashboard/stat-row";
 import { TrendChart } from "@/app/dashboard/trend-chart";
 import { SubscriptionList } from "@/app/dashboard/subscription-list";
 import { AnalysisSection } from "@/app/dashboard/analysis-section";
+import { FirstRunScreen } from "@/app/dashboard/first-run-sync";
+import {
+  StatRowSkeleton,
+  TrendChartSkeleton,
+  SubscriptionListSkeleton,
+} from "@/app/dashboard/skeletons";
 import type { SubscriptionView } from "@/lib/queries/subscriptions";
 import type { Analysis } from "@/lib/agent/analysis";
 
@@ -97,6 +103,17 @@ const MOCK_TREND = [
   { month: "2026-07", totalTwd: 1286 },
 ];
 
+function Divider({ label }: { label: string }) {
+  return (
+    <div className="mt-12 mb-4 flex items-center gap-3">
+      <span className="text-[11px] uppercase tracking-wide text-muted-foreground/60">
+        {label}
+      </span>
+      <div className="h-px flex-1 bg-border" />
+    </div>
+  );
+}
+
 export default function PreviewPage() {
   if (process.env.NODE_ENV !== "development") notFound();
 
@@ -121,7 +138,35 @@ export default function PreviewPage() {
         hasSubscriptions
       />
       <TrendChart points={MOCK_TREND} />
-      <SubscriptionList subscriptions={MOCK_SUBS} now={new Date()} />
+      <SubscriptionList
+        subscriptions={MOCK_SUBS}
+        now={new Date()}
+        billingEventCount={MOCK_SUBS.length}
+      />
+
+      <Divider label="空狀態：掃描過但沒有訂閱" />
+      <SubscriptionList
+        subscriptions={[]}
+        now={new Date()}
+        billingEventCount={4}
+      />
+
+      <Divider label="空狀態：完全沒有帳單信件" />
+      <SubscriptionList subscriptions={[]} now={new Date()} billingEventCount={0} />
+
+      <Divider label="同步中（無既有資料）" />
+      <StatRowSkeleton />
+      <TrendChartSkeleton />
+      <SubscriptionListSkeleton />
+
+      <Divider label="首次登入：同步進行中" />
+      <FirstRunScreen progress="AI 判讀中⋯128 / 312" failure={null} />
+
+      <Divider label="首次登入：判讀失敗" />
+      <FirstRunScreen
+        progress=""
+        failure="280 封信件判讀失敗，可能是暫時性問題，稍後重新同步即可。"
+      />
     </main>
   );
 }

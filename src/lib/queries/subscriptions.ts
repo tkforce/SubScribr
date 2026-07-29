@@ -116,6 +116,15 @@ export function upcomingBilling(
   return { days, label };
 }
 
+// Distinguishes the two ways a subscription list can be empty: no billing mail
+// was ever recognised, versus mail was recognised but none of it added up to a
+// recurring service (a log of nothing but trial reminders, say). The counters
+// from a live run are gone after the page refreshes, so the empty state reads
+// this instead — it is derived from stored rows and therefore survives reloads.
+export async function countBillingEvents(userId: string): Promise<number> {
+  return db.billingEvent.count({ where: { userId } });
+}
+
 // Active subscriptions for a user, Decimal→number, sorted by monthly spend desc.
 export async function getActiveSubscriptions(
   userId: string,

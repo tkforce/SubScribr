@@ -2,6 +2,7 @@ import { CreditCard } from "lucide-react";
 import { Avatar } from "./avatar";
 import { SectionPanel } from "./section-panel";
 import { upcomingBilling, type SubscriptionView } from "@/lib/queries/subscriptions";
+import { INGEST_WINDOW_DAYS } from "@/lib/constants";
 
 const CYCLE_LABEL: Record<string, string> = {
   monthly: "月繳",
@@ -53,9 +54,12 @@ const GRID = "grid grid-cols-[34px_1.6fr_1fr_0.8fr_1fr] items-center gap-3.5";
 export function SubscriptionList({
   subscriptions,
   now,
+  billingEventCount,
 }: {
   subscriptions: SubscriptionView[];
   now: Date;
+  // Separates "nothing was found" from "things were found, none recurring".
+  billingEventCount: number;
 }) {
   // Not collapsible: this is the page's primary content, and hiding it behind a
   // chevron would also dilute the one section where collapsing is meaningful.
@@ -71,8 +75,15 @@ export function SubscriptionList({
         // Muted one-liner, matching the analysis section's empty state rather
         // than the full-width dashed box this used when the list sat directly
         // on the page background.
+        //
+        // Says which kind of empty this is. The previous copy pointed at an
+        // "Ingest" button that isn't on this page and at /dev, a developer
+        // page — so it named two things a user cannot act on, and left the
+        // one thing they can (the sync button above) unmentioned.
         <p className="text-xs text-muted-foreground">
-          目前沒有訂閱資料。點下方的「Ingest」掃描 Gmail，或前往 /dev 重新掃描。
+          {billingEventCount === 0
+            ? `過去 ${INGEST_WINDOW_DAYS} 天沒有找到訂閱帳單信件。可以用上方的重新整理按鈕再掃描一次。`
+            : `已收錄 ${billingEventCount} 筆帳單紀錄，但都不足以構成定期訂閱。`}
         </p>
       ) : (
         <>

@@ -100,14 +100,26 @@ export async function processEmail(
   };
 }
 
+// Reports what the pipeline is doing, one line at a time. Plain strings rather
+// than an event union: the pipeline composes the copy, and the SSE route wraps
+// it — that keeps this module unaware of any transport.
+export type ProgressHandler = (message: string) => void;
+
 export async function ingestEmails(
   accessToken: string,
   userId: string,
   days: number,
+  onProgress?: ProgressHandler,
 ): Promise<IngestStats> {
+  const report = onProgress ?? (() => {});
+
+  report("連線 Gmail⋯");
+
   const query = buildSubscriptionQuery(days);
   const allIds = await listMessageIds(accessToken, query);
   const candidateCount = allIds.length;
+
+  report(`Gmail 篩選⋯找到 ${candidateCount} 封候選信件`);
 
   const existing = await db.billingEvent.findMany({
     where: { userId, gmailMessageId: { in: allIds } },
@@ -117,16 +129,30 @@ export async function ingestEmails(
   const newIds = allIds.filter((id) => !existingIds.has(id));
   const skippedExistingCount = candidateCount - newIds.length;
 
+  if (newIds.length > 0) report(`讀取信件內容⋯${newIds.length} 封`);
+
   const emails = await fetchMessagesByIds(accessToken, newIds);
 
-  const results = await pMap(emails, (email) => processEmail(email, userId), {
-    // Paid Tier 1 Gemini has plenty of RPM (~2k); the real ceiling is TPM
-    // (~4M) since each email is token-heavy (~3k tokens). concurrency × (60 /
-    // latency) × tokensPerCall must stay under TPM. 15-20 finishes our volume
-    // in seconds with comfortable headroom; the SDK's backoff absorbs bursts.
-    concurrency: 20,
-    stopOnError: false,
-  });
+  // Counts completions, not starts: at concurrency 20 the starts all fire at
+  // once and would jump the counter straight to the total.
+  let examined = 0;
+  const results = await pMap(
+    emails,
+    async (email) => {
+      const outcome = await processEmail(email, userId);
+      examined += 1;
+      report(`AI 判讀中⋯${examined} / ${emails.length}`);
+      return outcome;
+    },
+    {
+      // Paid Tier 1 Gemini has plenty of RPM (~2k); the real ceiling is TPM
+      // (~4M) since each email is token-heavy (~3k tokens). concurrency × (60 /
+      // latency) × tokensPerCall must stay under TPM. 15-20 finishes our volume
+      // in seconds with comfortable headroom; the SDK's backoff absorbs bursts.
+      concurrency: 20,
+      stopOnError: false,
+    },
+  );
 
   const inserts: BillingEventInsert[] = [];
   let blacklistedCount = 0;
@@ -164,6 +190,7 @@ export async function ingestEmails(
 
   // only upsert subscriptions for services that had new billing events to avoid unnecessary upserts
   const affected = new Set(inserts.map((i) => i.serviceName));
+  if (affected.size > 0) report(`整理訂閱資料⋯${affected.size} 個服務`);
   const subscriptionsUpserted = await upsertSubscriptionsForServices(
     userId,
     affected,
