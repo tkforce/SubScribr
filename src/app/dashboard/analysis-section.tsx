@@ -9,7 +9,7 @@ import {
   TrendingUp,
 } from "lucide-react";
 import type { Analysis, Insight, AnalysisResult } from "@/lib/agent/analysis";
-import { useAnalysisStream } from "./use-analysis-stream";
+import { useEventStream } from "./use-event-stream";
 import { SectionPanel } from "./section-panel";
 
 const PRIORITY_DOT: Record<Insight["priority"], string> = {
@@ -91,8 +91,10 @@ export function AnalysisSection({
   stale: boolean;
   hasSubscriptions: boolean;
 }) {
-  const { status, progress, result, error, run } =
-    useAnalysisStream<AnalysisResult>("/api/analyze");
+  const { status, progress, result, error, run } = useEventStream<AnalysisResult>(
+    "/api/analyze",
+    "開始分析...",
+  );
 
   // Guards against StrictMode's double-mount in dev. The server-rendered
   // `stale` prop stays true until the next full page load, so without this a

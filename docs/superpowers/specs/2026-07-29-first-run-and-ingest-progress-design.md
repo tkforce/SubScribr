@@ -135,6 +135,19 @@ route 本身鏡像 `/api/analyze`：session 取 `userId`（絕不從 request bod
 - `use-event-stream` 的「stream 結束無 `done` → error」。
 - `sse.ts` / `sse-client.ts` 既有測試不動。
 
+## 實作時的偏離
+
+三處，都是實作時才看見的：
+
+**1. `onProgress(message)` 而非 `onEvent(event)`。** pipeline 吐純字串，SSE route 才包成事件。這樣 `pipeline.ts` 完全不知道傳輸層存在，測試也只要收字串陣列。
+
+**2. 零結果文案分成兩個來源。** 原設計假設 `IngestStats` 在渲染空狀態時還在手上——但 `FirstRunSync` 跑完會 `router.refresh()`，元件連同 stats 一起消失。所以拆成：
+
+- **持久**：`countBillingEvents(userId)` 由 server 查，重新整理也還在，負責分辨「完全沒找到」與「找到了但不構成訂閱」。
+- **當次**：`describeIngestOutcome(stats)` 只負責判讀失敗這種**不會留下痕跡**的故障。而且 `FirstRunSync` 遇到 warning 時**不 refresh**，停在原地把話說完——否則就會 refresh 進一個「沒有訂閱」的畫面，正好是本 spec 要消滅的那種偽裝。
+
+**3. `FirstRunScreen` 從 `FirstRunSync` 拆出來。** 純呈現層，讓 `/dev/preview` 不需要 Google session 就能看到兩種狀態。這條路徑先前從未被眼睛看過（design v8 Part 9 列的已知問題之一）。順帶抓到一個 bug：原本 `FirstRunScreen` 自帶 `<main>`，嵌進 preview 會變成 `<main>` 裡包 `<main>`。landmark 現在由容器負責。
+
 ## 已知風險（不在本 spec 解決）
 
 **`maxDuration` 已經貼在牆上。** 首次同步實測 56 秒，Vercel Hobby 的上限就是 60。這次只差 4 秒過關，信箱再大一點就會 504——而且 `lastIngestAt` 是在 `ingestEmails()` 最後才戳，逾時等於整批白跑，下次進來再跑一次全量、再逾時一次，形成無法脫離的迴圈。

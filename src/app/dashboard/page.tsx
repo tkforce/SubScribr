@@ -3,7 +3,11 @@ import { auth } from "@/auth";
 import { reconnectGmail, signOutAction } from "@/app/actions/auth";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { getActiveSubscriptions, computeOverview } from "@/lib/queries/subscriptions";
+import {
+  getActiveSubscriptions,
+  computeOverview,
+  countBillingEvents,
+} from "@/lib/queries/subscriptions";
 import { computeMonthDelta, getMonthlyTrend } from "@/lib/queries/monthly-trend";
 import { getAnalysisState } from "@/lib/queries/analysis";
 import { isIngestStale, formatLastSynced } from "@/lib/ingest-freshness";
@@ -13,6 +17,13 @@ import { SubscriptionList } from "./subscription-list";
 import { TrendChart } from "./trend-chart";
 import { AutoSync } from "./auto-sync";
 import { AnalysisSection } from "./analysis-section";
+import { FirstRunSync } from "./first-run-sync";
+import { SyncStatusProvider, SyncAware } from "./sync-status";
+import {
+  StatRowSkeleton,
+  TrendChartSkeleton,
+  SubscriptionListSkeleton,
+} from "./skeletons";
 
 // Server Actions inherit the invoking page's limit, and AutoSync triggers
 // ingestSubscriptionEmails from here — a 90-day Gmail window fanned out at
@@ -27,19 +38,35 @@ export default async function DashboardPage() {
 
   // getAnalysisState also returns lastIngestAt, so it doubles as the user
   // freshness query the sync banner needs — one round-trip, not two.
-  const [subscriptions, trendPoints, analysisState] = session.userId
-    ? await Promise.all([
-        getActiveSubscriptions(session.userId),
-        getMonthlyTrend(session.userId),
-        getAnalysisState(session.userId),
-      ])
-    : [[], [], null];
+  const [subscriptions, trendPoints, analysisState, billingEventCount] =
+    session.userId
+      ? await Promise.all([
+          getActiveSubscriptions(session.userId),
+          getMonthlyTrend(session.userId),
+          getAnalysisState(session.userId),
+          countBillingEvents(session.userId),
+        ])
+      : [[], [], null, 0];
   const overview = computeOverview(subscriptions);
 
   const lastIngestAt = analysisState?.lastIngestAt ?? null;
   const now = new Date();
 
+  // Never synced: there is no dashboard to draw yet, only zeros the first sync
+  // hasn't finished disproving. Show the sync itself instead, full-page. Once
+  // it stamps lastIngestAt this branch is never taken again for this account.
+  if (
+    session.userId &&
+    lastIngestAt === null &&
+    session.error !== "RefreshAccessTokenError"
+  ) {
+    return <FirstRunSync />;
+  }
+
+  const isEmpty = subscriptions.length === 0;
+
   return (
+    <SyncStatusProvider>
     <main className="mx-auto w-full max-w-5xl flex-1 px-6 py-12">
       <header className="mb-8 flex items-center justify-between">
         <div>
@@ -76,11 +103,16 @@ export default async function DashboardPage() {
         </div>
       )}
 
-      <StatRow
-        totalMonthlyTwd={overview.totalMonthlyTwd}
-        activeCount={overview.activeCount}
-        delta={computeMonthDelta(trendPoints)}
-      />
+      {/* Zeros are only worth showing once a sync has finished deciding they
+          are the answer. While one is running with nothing on screen yet, the
+          skeleton says "not known" where NT$ 0 would say "none". */}
+      <SyncAware empty={isEmpty} fallback={<StatRowSkeleton />}>
+        <StatRow
+          totalMonthlyTwd={overview.totalMonthlyTwd}
+          activeCount={overview.activeCount}
+          delta={computeMonthDelta(trendPoints)}
+        />
+      </SyncAware>
       {/* Summary → interpretation → evidence. The analysis headline restates
           the stat row's delta in words, so the two reinforce each other when
           adjacent; separated by the chart and the table it just read as a
@@ -94,8 +126,17 @@ export default async function DashboardPage() {
         stale={analysisState?.stale ?? false}
         hasSubscriptions={subscriptions.length > 0}
       />
-      <TrendChart points={trendPoints} />
-      <SubscriptionList subscriptions={subscriptions} now={now} />
+      <SyncAware empty={isEmpty} fallback={<TrendChartSkeleton />}>
+        <TrendChart points={trendPoints} />
+      </SyncAware>
+      <SyncAware empty={isEmpty} fallback={<SubscriptionListSkeleton />}>
+        <SubscriptionList
+          subscriptions={subscriptions}
+          now={now}
+          billingEventCount={billingEventCount}
+        />
+      </SyncAware>
     </main>
+    </SyncStatusProvider>
   );
 }
