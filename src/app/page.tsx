@@ -2,6 +2,12 @@ import Link from "next/link";
 import { auth } from "@/auth";
 import { signInWithGoogle, signOutAction } from "@/app/actions/auth";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { StatRow } from "@/app/dashboard/stat-row";
+import { AnalysisSection } from "@/app/dashboard/analysis-section";
+import { SubscriptionList } from "@/app/dashboard/subscription-list";
+import { INGEST_WINDOW_DAYS } from "@/lib/constants";
+import type { Analysis } from "@/lib/agent/analysis";
+import type { SubscriptionView } from "@/lib/queries/subscriptions";
 
 export default async function Home() {
   const session = await auth();
@@ -50,9 +56,6 @@ export default async function Home() {
           </a>
           <a href="#how-it-works" className="transition hover:text-zinc-900 dark:hover:text-zinc-100">
             How it works
-          </a>
-          <a href="#accuracy" className="transition hover:text-zinc-900 dark:hover:text-zinc-100">
-            Accuracy
           </a>
         </nav>
         <div className="flex items-center gap-3">
@@ -123,158 +126,15 @@ export default async function Home() {
               )}
             </div>
             <p className="mt-3 text-xs text-zinc-500 dark:text-zinc-500">
-              Read-only Gmail access · Never sold · Cancel anytime
+              {/* "Cancel anytime" was here, which implies a paid plan we
+                  don't have — the only thing there is to cancel is us. */}
+              Read-only Gmail access · Email bodies never stored · Disconnect
+              anytime
             </p>
           </div>
 
           {/* Hero preview card */}
-          <div className="relative mx-auto mt-20 max-w-5xl">
-            <div className="rounded-2xl border border-white/60 bg-white/60 p-2 shadow-2xl shadow-zinc-900/10 backdrop-blur-xl dark:border-white/10 dark:bg-white/[0.03] dark:shadow-black/40">
-              <div className="rounded-xl bg-white/40 p-6 dark:bg-zinc-950/50 sm:p-8">
-                <div className="grid gap-6 lg:grid-cols-5">
-                  {/* Left: This Week Needs Attention */}
-                  <div className="lg:col-span-2">
-                    <div className="mb-4 flex items-center justify-between">
-                      <div>
-                        <p className="text-xs font-medium uppercase tracking-wider text-zinc-500">
-                          This week
-                        </p>
-                        <p className="mt-1 text-base font-semibold">
-                          3 things to look at
-                        </p>
-                      </div>
-                      <span className="inline-flex items-center gap-1 rounded-full bg-indigo-50 px-2 py-1 text-[10px] font-medium text-indigo-700 dark:bg-indigo-500/10 dark:text-indigo-300">
-                        <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-indigo-500" />
-                        AI agent
-                      </span>
-                    </div>
-                    <div className="space-y-3">
-                      <AlertCard
-                        priority="high"
-                        title="ChatGPT Plus 3 days to renewal"
-                        body="USD $20.00 · Last opened 47 days ago. Likely a cancel candidate."
-                        primary="Go cancel"
-                        secondary="Keep"
-                      />
-                      <AlertCard
-                        priority="medium"
-                        title="KKBOX Family renews at end of month"
-                        body="NT$298 · Price alert — was NT$249 a year ago (+19.7%)."
-                        primary="Details"
-                        secondary="Keep"
-                      />
-                      <AlertCard
-                        priority="low"
-                        title="iCloud+ 200GB renews Friday"
-                        body="NT$90 · 82% usage this quarter — worth keeping."
-                        primary="Snooze"
-                        secondary="OK"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Right: Monthly overview + subscription list */}
-                  <div className="lg:col-span-3">
-                    <div className="mb-4 grid grid-cols-3 gap-3">
-                      <Stat label="This month" value="NT$3,847" trend="+12% MoM" trendColor="text-rose-500" />
-                      <Stat label="Active" value="14" trend="2 new" trendColor="text-zinc-500" />
-                      <Stat label="Saved YTD" value="NT$2,140" trend="↓ cancelled" trendColor="text-emerald-500" />
-                    </div>
-                    <div className="space-y-2">
-                      {[
-                        {
-                          name: "ChatGPT Plus",
-                          tag: "AI · Renews in 3 days",
-                          price: "$20.00",
-                          color: "from-emerald-500 to-teal-600",
-                          initial: "G",
-                          confidence: 0.98,
-                          warn: true,
-                        },
-                        {
-                          name: "Notion",
-                          tag: "Productivity · Monthly",
-                          price: "$10.00",
-                          color: "from-zinc-700 to-zinc-900",
-                          initial: "N",
-                          confidence: 0.99,
-                        },
-                        {
-                          name: "KKBOX Family",
-                          tag: "Music · End of month",
-                          price: "NT$298",
-                          color: "from-sky-500 to-blue-600",
-                          initial: "K",
-                          confidence: 0.94,
-                          warn: true,
-                        },
-                        {
-                          name: "Netflix Premium",
-                          tag: "Streaming · Monthly",
-                          price: "NT$390",
-                          color: "from-rose-500 to-red-600",
-                          initial: "N",
-                          confidence: 0.97,
-                        },
-                        {
-                          name: "iCloud+ 200GB",
-                          tag: "Storage · Friday",
-                          price: "NT$90",
-                          color: "from-zinc-500 to-zinc-700",
-                          initial: "i",
-                          confidence: 0.96,
-                        },
-                      ].map((s) => (
-                        <div
-                          key={s.name}
-                          className="flex items-center justify-between rounded-lg border border-zinc-200/70 bg-white px-3 py-2.5 dark:border-white/5 dark:bg-white/[0.03]"
-                        >
-                          <div className="flex items-center gap-3">
-                            <div
-                              className={`grid h-9 w-9 place-items-center rounded-lg bg-gradient-to-br ${s.color} text-sm font-semibold text-white`}
-                            >
-                              {s.initial}
-                            </div>
-                            <div>
-                              <p className="text-sm font-medium">{s.name}</p>
-                              <p className="text-xs text-zinc-500">{s.tag}</p>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-3">
-                            <span className="hidden font-mono text-[10px] text-zinc-400 sm:inline">
-                              conf {s.confidence.toFixed(2)}
-                            </span>
-                            {s.warn && (
-                              <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-medium text-amber-700 dark:bg-amber-500/10 dark:text-amber-400">
-                                Renewing
-                              </span>
-                            )}
-                            <p className="text-sm font-medium tabular-nums">{s.price}</p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Streaming-progress strip */}
-        <section className="mx-auto w-full max-w-5xl px-6 pb-20 sm:px-8">
-          <div className="rounded-2xl border border-white/60 bg-white/60 p-6 shadow-sm backdrop-blur-xl dark:border-white/10 dark:bg-white/[0.03] sm:p-8">
-            <p className="text-sm font-medium uppercase tracking-wider text-zinc-500">
-              First-time onboarding · streaming progress
-            </p>
-            <div className="mt-4 space-y-2 font-mono text-sm">
-              <ProgressLine done>Scanning the last 90 days of email… 127 candidates found</ProgressLine>
-              <ProgressLine done>HTML → plain text · thread dedupe complete</ProgressLine>
-              <ProgressLine done>LLM extracting… 8 subscriptions identified</ProgressLine>
-              <ProgressLine done>LLM extracting… 14 subscriptions identified</ProgressLine>
-              <ProgressLine running>Generating this week&apos;s alerts…</ProgressLine>
-            </div>
-          </div>
+          <DashboardPreview now={new Date()} />
         </section>
 
         {/* Features */}
@@ -291,8 +151,8 @@ export default async function Home() {
             </h2>
             <p className="mt-4 text-base text-zinc-600 dark:text-zinc-400">
               Receipts are where subscriptions are actually born. SubScribr reads
-              them the way you would — bilingually, in the right currency, with
-              the original email one click away.
+              them the way you would — bilingually, in the right currency — and
+              then throws the email away, keeping only what it learned.
             </p>
           </div>
 
@@ -300,7 +160,7 @@ export default async function Home() {
             {features.map((f) => (
               <div
                 key={f.title}
-                className="group relative overflow-hidden rounded-2xl border border-white/60 bg-white/60 p-6 backdrop-blur-xl transition hover:-translate-y-0.5 hover:shadow-xl hover:shadow-zinc-900/5 dark:border-white/10 dark:bg-white/[0.03] dark:hover:shadow-black/30"
+                className="group relative overflow-hidden rounded-2xl border border-white/60 bg-white/60 p-6 transition hover:-translate-y-0.5 hover:shadow-xl hover:shadow-zinc-900/5 dark:border-white/10 dark:bg-white/[0.03] dark:hover:shadow-black/30"
               >
                 <div
                   className={`inline-flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br ${f.color} text-white shadow-md`}
@@ -333,7 +193,7 @@ export default async function Home() {
           <div className="mt-16 grid gap-8 md:grid-cols-3">
             {steps.map((s, i) => (
               <div key={s.title} className="relative">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full border border-white/60 bg-white/60 text-sm font-semibold backdrop-blur dark:border-white/10 dark:bg-white/[0.03]">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full border border-white/60 bg-white/60 text-sm font-semibold dark:border-white/10 dark:bg-white/[0.03]">
                   {i + 1}
                 </div>
                 <h3 className="mt-5 text-lg font-semibold">{s.title}</h3>
@@ -345,75 +205,10 @@ export default async function Home() {
           </div>
         </section>
 
-        {/* Accuracy / trust */}
-        <section
-          id="accuracy"
-          className="mx-auto w-full max-w-6xl px-6 py-20 sm:px-8 sm:py-28"
-        >
-          <div className="grid gap-10 rounded-3xl border border-white/60 bg-white/60 p-8 backdrop-blur-xl dark:border-white/10 dark:bg-white/[0.02] sm:p-12 lg:grid-cols-2 lg:items-center">
-            <div>
-              <p className="text-sm font-semibold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
-                Trust, but verify
-              </p>
-              <h2 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">
-                We publish the AI&apos;s accuracy.
-              </h2>
-              <p className="mt-4 text-base text-zinc-600 dark:text-zinc-400">
-                Every extraction shows a confidence score and links back to the
-                source email. We maintain an 80-row Traditional Chinese golden
-                set across 15 services and publish per-field precision, recall,
-                and F1 — versioned per prompt — on a public eval page.
-              </p>
-              <a
-                href="/eval"
-                className="mt-6 inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-white px-4 py-2 text-sm font-medium text-zinc-900 transition hover:bg-zinc-50 dark:border-white/10 dark:bg-white/[0.03] dark:text-zinc-100 dark:hover:bg-white/[0.06]"
-              >
-                See latest eval
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="h-4 w-4"
-                  aria-hidden="true"
-                >
-                  <path d="M5 12h14" />
-                  <path d="m13 5 7 7-7 7" />
-                </svg>
-              </a>
-            </div>
-            <div className="rounded-2xl border border-white/60 bg-white/50 p-6 dark:border-white/10 dark:bg-zinc-950/50">
-              <div className="flex items-center justify-between">
-                <p className="text-xs font-medium uppercase tracking-wider text-zinc-500">
-                  Eval · prompt v0.4
-                </p>
-                <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-medium text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400">
-                  Passing
-                </span>
-              </div>
-              <div className="mt-5 space-y-3">
-                <Metric label="Service name" value={0.97} />
-                <Metric label="Amount + currency" value={0.96} />
-                <Metric label="Billing period" value={0.94} />
-                <Metric label="Next billing date" value={0.91} />
-                <Metric label="Category" value={0.89} />
-              </div>
-              <p className="mt-5 text-xs text-zinc-500">
-                F1 across an 80-row Traditional Chinese golden set · 15
-                services · updated each prompt revision
-              </p>
-            </div>
-          </div>
-        </section>
-
-        {/* CTA */}
-        <section
-          id="waitlist"
-          className="mx-auto w-full max-w-6xl px-6 pb-24 sm:px-8 sm:pb-32"
-        >
+        {/* CTA. One button, the same one as the header — the page used to end
+            on a waitlist form with no handler and no endpoint behind it, which
+            is the one thing on a landing page that must not be a mockup. */}
+        <section className="mx-auto w-full max-w-6xl px-6 pb-24 sm:px-8 sm:pb-32">
           <div className="relative overflow-hidden rounded-3xl border border-zinc-200 bg-gradient-to-br from-indigo-500 via-fuchsia-500 to-rose-500 p-10 text-white shadow-2xl shadow-indigo-500/20 sm:p-16 dark:border-white/10">
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.25),transparent_50%)]" />
             <div className="relative mx-auto max-w-2xl text-center">
@@ -421,22 +216,28 @@ export default async function Home() {
                 Stop guessing what you&apos;re paying for.
               </h2>
               <p className="mt-4 text-base text-white/80">
-                Join the waitlist. We&apos;ll email when SubScribr opens up — no
-                credit card, read-only Gmail access only.
+                One sign-in, then about a minute of scanning. Read-only access,
+                no card, nothing written back to your inbox.
               </p>
-              <div className="mx-auto mt-8 flex w-full max-w-md flex-col items-center gap-3 sm:flex-row">
-                <input
-                  type="email"
-                  placeholder="you@example.com"
-                  aria-label="Email address"
-                  className="h-12 w-full flex-1 rounded-full border border-white/20 bg-white/10 px-5 text-sm text-white placeholder:text-white/60 outline-none backdrop-blur transition focus:border-white/40 focus:ring-2 focus:ring-white/20"
-                />
-                <button
-                  type="button"
-                  className="h-12 w-full whitespace-nowrap rounded-full bg-white px-6 text-sm font-medium text-zinc-900 shadow-lg transition hover:bg-zinc-100 sm:w-auto"
-                >
-                  Reserve my spot
-                </button>
+              <div className="mt-8 flex justify-center">
+                {user ? (
+                  <Link
+                    href="/dashboard"
+                    className="inline-flex h-12 items-center justify-center rounded-full bg-white px-6 text-sm font-medium text-zinc-900 shadow-lg transition hover:bg-zinc-100"
+                  >
+                    Go to my subscriptions
+                  </Link>
+                ) : (
+                  <form action={signInWithGoogle}>
+                    <button
+                      type="submit"
+                      className="inline-flex h-12 cursor-pointer items-center justify-center gap-3 rounded-full bg-white px-6 text-sm font-medium text-zinc-900 shadow-lg transition hover:bg-zinc-100"
+                    >
+                      <GoogleMark />
+                      Connect Gmail with Google
+                    </button>
+                  </form>
+                )}
               </div>
             </div>
           </div>
@@ -453,9 +254,6 @@ export default async function Home() {
             <span>© {new Date().getFullYear()} SubScribr. All rights reserved.</span>
           </div>
           <div className="flex items-center gap-6">
-            <a href="/eval" className="transition hover:text-zinc-900 dark:hover:text-zinc-100">
-              Accuracy
-            </a>
             <a href="#" className="transition hover:text-zinc-900 dark:hover:text-zinc-100">
               Privacy
             </a>
@@ -474,105 +272,58 @@ export default async function Home() {
 
 /* ---------- Local presentational components (server-safe) ---------- */
 
-function AlertCard({
-  priority,
-  title,
-  body,
-  primary,
-  secondary,
-}: {
-  priority: "high" | "medium" | "low";
-  title: string;
-  body: string;
-  primary: string;
-  secondary: string;
-}) {
-  const dot =
-    priority === "high"
-      ? "bg-rose-500"
-      : priority === "medium"
-        ? "bg-amber-500"
-        : "bg-emerald-500";
-  const ring =
-    priority === "high"
-      ? "ring-rose-500/20"
-      : priority === "medium"
-        ? "ring-amber-500/20"
-        : "ring-emerald-500/20";
+// The hero preview renders the *actual* dashboard components with mock data,
+// the way /dev/preview does — not a hand-drawn imitation of them. The previous
+// mock had quietly drifted into advertising a product we don't ship: two
+// separate AI sections, per-card Keep / Snooze / Go cancel buttons, and a
+// `conf 0.98` column for a confidence score the pipeline deliberately never
+// stores. Importing the real components means the landing page can't claim a
+// UI the dashboard doesn't have — if a section changes shape, this changes
+// with it.
+function DashboardPreview({ now }: { now: Date }) {
   return (
-    <div
-      className={`rounded-lg border border-zinc-200/70 bg-white p-3 ring-4 ${ring} dark:border-white/5 dark:bg-white/[0.03]`}
-    >
-      <div className="flex items-start gap-2">
-        <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${dot}`} />
-        <div className="flex-1">
-          <p className="text-sm font-medium leading-snug">{title}</p>
-          <p className="mt-1 text-xs leading-relaxed text-zinc-500">{body}</p>
-          <div className="mt-2 flex items-center gap-2">
-            <button
-              type="button"
-              className="rounded-md bg-zinc-900 px-2.5 py-1 text-[11px] font-medium text-white transition hover:bg-zinc-700 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200"
-            >
-              {primary}
-            </button>
-            <button
-              type="button"
-              className="rounded-md border border-zinc-200 bg-white px-2.5 py-1 text-[11px] font-medium text-zinc-700 transition hover:bg-zinc-50 dark:border-white/10 dark:bg-transparent dark:text-zinc-300 dark:hover:bg-white/5"
-            >
-              {secondary}
-            </button>
+    <div className="relative mx-auto mt-20 max-w-5xl">
+      <div className="rounded-2xl border border-white/60 bg-white/60 p-2 shadow-2xl shadow-zinc-900/10 dark:border-white/10 dark:bg-white/[0.03] dark:shadow-black/40">
+        {/* The dashboard's own page background, scaled down to this frame, so
+            the glass surfaces sit on the backdrop they were designed against
+            instead of on the landing page's grid-and-blobs. */}
+        <div className="relative isolate overflow-hidden rounded-xl bg-background px-5 pt-5 pb-6 sm:px-6">
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-0 -z-10"
+            style={{
+              backgroundImage: [
+                "radial-gradient(22rem 15rem at 12% -8%, var(--glow-1), transparent 62%)",
+                "radial-gradient(18rem 14rem at 98% 18%, var(--glow-2), transparent 62%)",
+                "radial-gradient(20rem 13rem at 75% 95%, var(--glow-3), transparent 62%)",
+                "radial-gradient(15rem 12rem at -5% 70%, var(--glow-4), transparent 62%)",
+              ].join(","),
+            }}
+          />
+
+          {/* Stands in for the dashboard header. Not a heading element: this is
+              a picture of a screen, and it shouldn't enter the page outline. */}
+          <div className="mb-6 flex items-baseline justify-between gap-3">
+            <p className="text-xl font-semibold tracking-tight">訂閱總覽</p>
+            <p className="text-xs text-muted-foreground">Last synced: 3m ago</p>
           </div>
+
+          <StatRow
+            totalMonthlyTwd={PREVIEW_MONTHLY_TWD}
+            activeCount={PREVIEW_SUBS.length}
+            delta={{ deltaTwd: 106, pctChange: 106 / (PREVIEW_MONTHLY_TWD - 106) }}
+          />
+          {/* stale={false} keeps this inert — the section only calls the agent
+              when the server says its analysis is behind the event log. */}
+          <AnalysisSection
+            initial={PREVIEW_ANALYSIS}
+            freshnessLabel="12 分鐘前分析"
+            stale={false}
+            hasSubscriptions
+          />
+          <SubscriptionList subscriptions={PREVIEW_SUBS} now={now} />
         </div>
       </div>
-    </div>
-  );
-}
-
-function Stat({
-  label,
-  value,
-  trend,
-  trendColor,
-}: {
-  label: string;
-  value: string;
-  trend: string;
-  trendColor: string;
-}) {
-  return (
-    <div className="rounded-lg border border-zinc-200/70 bg-white px-3 py-3 dark:border-white/5 dark:bg-white/[0.03]">
-      <p className="text-[10px] font-medium uppercase tracking-wider text-zinc-500">
-        {label}
-      </p>
-      <p className="mt-1 text-xl font-semibold tabular-nums">{value}</p>
-      <p className={`text-[10px] font-medium ${trendColor}`}>{trend}</p>
-    </div>
-  );
-}
-
-function ProgressLine({
-  done,
-  running,
-  children,
-}: {
-  done?: boolean;
-  running?: boolean;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="flex items-center gap-3">
-      {done ? (
-        <span className="grid h-4 w-4 place-items-center rounded-full bg-emerald-500 text-[10px] font-bold text-white">
-          ✓
-        </span>
-      ) : running ? (
-        <span className="h-4 w-4 animate-spin rounded-full border-2 border-zinc-300 border-t-indigo-500 dark:border-zinc-700 dark:border-t-indigo-400" />
-      ) : (
-        <span className="h-4 w-4 rounded-full border border-zinc-300 dark:border-zinc-700" />
-      )}
-      <span className={done ? "text-zinc-500" : "text-zinc-900 dark:text-zinc-100"}>
-        {children}
-      </span>
     </div>
   );
 }
@@ -590,34 +341,110 @@ function GoogleMark() {
   );
 }
 
-function Metric({ label, value }: { label: string; value: number }) {
-  const pct = Math.round(value * 100);
-  return (
-    <div>
-      <div className="flex items-center justify-between text-xs">
-        <span className="text-zinc-600 dark:text-zinc-400">{label}</span>
-        <span className="font-mono tabular-nums text-zinc-900 dark:text-zinc-100">
-          F1 {value.toFixed(2)}
-        </span>
-      </div>
-      <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-zinc-200 dark:bg-white/10">
-        <div
-          className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-teal-500"
-          style={{ width: `${pct}%` }}
-        />
-      </div>
-    </div>
-  );
+/* ---------- Static content ---------- */
+
+// Preview data. Invented, but internally consistent the way a real account is:
+// the four services below are exactly the NT$1,344 monthly total in the stat
+// row, the headline's "3 件事" is the number of insights, and the insights only
+// state things the four rows support.
+function inDays(days: number): Date {
+  const d = new Date();
+  d.setDate(d.getDate() + days);
+  return d;
 }
 
-/* ---------- Static content ---------- */
+// Relative to today, so the "3 天後扣款" row keeps earning its badge instead of
+// rotting into a past date the moment this file stops being edited.
+const PREVIEW_SUBS: SubscriptionView[] = [
+  {
+    id: "preview-cursor",
+    serviceName: "cursor",
+    displayName: "Cursor Pro",
+    amount: 20,
+    currency: "USD",
+    amountInTwd: 640,
+    cycle: "monthly",
+    category: "ai",
+    status: "active",
+    nextBillingDate: inDays(3),
+  },
+  {
+    id: "preview-netflix",
+    serviceName: "netflix",
+    displayName: "Netflix",
+    amount: 390,
+    currency: "TWD",
+    amountInTwd: 390,
+    cycle: "monthly",
+    category: "entertainment",
+    status: "active",
+    nextBillingDate: inDays(12),
+  },
+  {
+    id: "preview-google-one",
+    serviceName: "google-one",
+    displayName: "Google One",
+    amount: 165,
+    currency: "TWD",
+    amountInTwd: 165,
+    cycle: "monthly",
+    category: "cloud",
+    status: "active",
+    nextBillingDate: inDays(19),
+  },
+  {
+    id: "preview-spotify",
+    serviceName: "spotify",
+    displayName: "Spotify",
+    amount: 149,
+    currency: "TWD",
+    amountInTwd: 149,
+    cycle: "monthly",
+    category: "entertainment",
+    status: "active",
+    nextBillingDate: inDays(24),
+  },
+];
+
+const PREVIEW_MONTHLY_TWD = 1344;
+
+const PREVIEW_ANALYSIS: Analysis = {
+  headline: "本月支出增加 NT$106，增幅約 9%；有 3 件事需要注意。",
+  insights: [
+    {
+      kind: "alert",
+      priority: "high",
+      serviceName: "Cursor Pro",
+      title: "Cursor Pro 3 天後續約",
+      detail:
+        "US$20（約 NT$640）即將續約，是目前最大的一筆月費，佔每月總支出 48%。",
+      suggestion:
+        "如果這個月用量不高，可以先到 Cursor 帳戶頁確認方案，再決定是否保留。",
+    },
+    {
+      kind: "change",
+      priority: "medium",
+      serviceName: "Netflix",
+      title: "Netflix 漲價 NT$60",
+      detail: "月費從 NT$330 調整為 NT$390，年化增加約 NT$720。",
+    },
+    {
+      kind: "observation",
+      priority: "low",
+      serviceName: "娛樂類",
+      title: "娛樂類佔月支出 40%",
+      detail:
+        "Netflix 與 Spotify 合計每月 NT$539，是僅次於 AI 的第二大分類。",
+    },
+  ],
+};
 
 const iconClass = "h-5 w-5";
 
 const features = [
   {
     title: "Gmail-native, read-only ingestion",
-    body: "Connect via Google OAuth with read-only scope. SubScribr scans the past 90 days, dedupes by thread, and quietly indexes 30+ subscription senders without ever sending a single email itself.",
+    body: "Google OAuth, read-only scope, nothing ever sent. The filtering happens on Gmail's side — a query for billing keywords over the last 90 days — so we fetch dozens of emails rather than thousands, then convert them to plain text in memory and keep only the message id and timestamp.",
     color: "from-indigo-500 to-blue-600",
     icon: (
       <svg
@@ -638,7 +465,7 @@ const features = [
   },
   {
     title: "Bilingual extraction, multi-currency",
-    body: "Claude reads mixed-language receipts with structured output: service, amount, currency, billing period, next charge date, category, and a confidence score for each one — handled in the same pass.",
+    body: "Mixed zh/en receipts go through one structured-output pass: service, amount, currency, billing cycle, category, and what kind of email it is. The model also decides whether it's a subscription at all — what it rejects is dropped, not filed away behind a low score.",
     color: "from-fuchsia-500 to-purple-600",
     icon: (
       <svg
@@ -661,8 +488,8 @@ const features = [
     ),
   },
   {
-    title: "This-week priority agent",
-    body: "A single agent armed with tools — query subscriptions, fetch source email context, calculate trends, detect anomalies — produces priority-sorted 🔴🟡🟢 cards with cancel-ready reasoning, streamed live.",
+    title: "One analysis, not a wall of AI",
+    body: "A single agent with four tools — subscriptions, spend trend, anomalies, service pricing — writes one ranked list of 🔴🟡🟢 cards, streaming what it's looking at as it goes. This started as two sections; they kept saying the same thing twice at double the tokens, so they became one.",
     color: "from-rose-500 to-orange-500",
     icon: (
       <svg
@@ -682,8 +509,8 @@ const features = [
     ),
   },
   {
-    title: "Monthly narrative analysis",
-    body: "Streaming top-3 changes, plain-language AI observations, and one or two concrete recommendations every month — built on the service knowledge module so price hikes and plan rules aren't a surprise.",
+    title: "An event log you can replay",
+    body: "Every receipt becomes an immutable billing event. Your subscription list and the analysis are both folded from that log, so a fix to how state is derived needs one re-sync to repair every account — not a migration script.",
     color: "from-emerald-500 to-teal-600",
     icon: (
       <svg
@@ -703,8 +530,8 @@ const features = [
     ),
   },
   {
-    title: "Source receipt, always one click away",
-    body: "Every subscription expands to show the original email, the LLM's parsed JSON, and the confidence score. No black-box numbers — if Claude is wrong, you can see exactly where.",
+    title: "Renewal dates that mean something",
+    body: "The next charge is projected from the most recent receipt plus the billing cycle, with month-end clamping so a charge on the 31st doesn't drift. What's billing this week is flagged in the list — which is the only version of this number worth showing.",
     color: "from-cyan-500 to-blue-500",
     icon: (
       <svg
@@ -728,7 +555,7 @@ const features = [
   },
   {
     title: "Privacy-first by design",
-    body: "Read-only Gmail scope. Encrypted at rest. Three-tier fallback so the dashboard never goes dark. SubScribr is on your side — not the side of the merchants charging you.",
+    body: "Read-only Gmail scope, bodies parsed in memory and never persisted. The account boundary isn't something the model can talk its way past either: the user id is bound in a closure, never a parameter a tool call gets to fill in.",
     color: "from-zinc-700 to-zinc-900",
     icon: (
       <svg
@@ -752,14 +579,14 @@ const features = [
 const steps = [
   {
     title: "Connect Gmail",
-    body: "Sign in with Google. Read-only scope, no scary permissions. We index the last 90 days for the demo and never write anything back.",
+    body: `Sign in with Google. Read-only scope, no scary permissions. We read the last ${INGEST_WINDOW_DAYS} days and never write anything back.`,
   },
   {
-    title: "AI extracts your subscriptions",
-    body: "Claude parses bilingual receipts with structured output, dedupes threads, and groups them by service with a visible confidence score.",
+    title: "AI reads your receipts",
+    body: "Candidate emails are parsed in parallel, and each subscription one becomes an immutable billing event. Your list of services is folded back out of that log.",
   },
   {
-    title: "Read the weekly + monthly verdict",
-    body: "An agent ranks renewals, surfaces zombies, and writes a plain-language monthly summary you can act on. Click any card to see the source email.",
+    title: "Read what changed",
+    body: "Each sync ends with an agent ranking what needs attention — renewals landing this week, price changes, where the money actually goes — each card carrying its own one-line suggestion.",
   },
 ];

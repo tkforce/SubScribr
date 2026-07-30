@@ -59,7 +59,7 @@
 
 /* Cool glassmorphism: blue accent (Tailwind blue) on cool slate neutrals over
    a pale blue/violet irregular gradient. The page body carries the gradient
-   (--glow-*); cards are translucent with backdrop blur (`glass` utility). */
+   (--glow-*); cards are translucent over it (`glass` utility). */
 :root {
   --background: oklch(0.96 0.015 275);
   --foreground: oklch(0.129 0.042 264.695);
@@ -192,29 +192,33 @@
 }
 
 
-/* Frosted-glass card surface: pair with a bg-card (or bg-card/NN) utility. */
+/* Frosted-glass card surface: pair with a bg-card (or bg-card/NN) utility.
+   Translucency + a light border, deliberately with no `backdrop-filter`.
+   Two reasons, in order:
+
+   1. The blur was visible only as an artifact. A backdrop-filter samples the
+      backdrop clipped to the viewport, so once a card crosses the top or
+      bottom edge of the screen the blur kernel reaches past the sampled area
+      and the engine clamps it — painting a band along the viewport edge that
+      travels with the scroll and reads as a stray shadow.
+   2. It bought nothing to offset that. Nothing on the dashboard scrolls
+      *behind* these surfaces (no sticky bars, no overlays), so the only
+      backdrop is the fixed radial-gradient on body::before — and a blurred
+      smooth gradient is the same smooth gradient. The frosted look here comes
+      from the translucent fill and the border, not from the blur. */
 @utility glass {
-  /* blur via a var so lightningcss keeps both the -webkit- and standard
-     properties (it collapses literal duplicates into the prefixed one,
-     which some engines don't alias) */
-  --glass-blur: 24px;
   border: 1px solid var(--glass-border);
-  -webkit-backdrop-filter: blur(var(--glass-blur));
-  backdrop-filter: blur(var(--glass-blur));
   box-shadow: 0 8px 32px oklch(0 0 0 / 6%);
 }
 
-/* Same frosted surface as `glass`, for rows stacked inside a list with only a
+/* Same surface as `glass`, for rows stacked inside a list with only a
    `gap-2` (8px) seam between them (subscription rows, insight cards). At that
    spacing `glass`'s shadow — 8px offset, 32px blur — doesn't fade out before
    it reaches the next row, so each seam shows a visible dark band where two
-   rows' shadows overlap. This keeps the same border/blur but drops the
-   shadow to a size that resolves within the gap instead of bridging it. */
+   rows' shadows overlap. This keeps the same border but drops the shadow to a
+   size that resolves within the gap instead of bridging it. */
 @utility glass-row {
-  --glass-blur: 24px;
   border: 1px solid var(--glass-border);
-  -webkit-backdrop-filter: blur(var(--glass-blur));
-  backdrop-filter: blur(var(--glass-blur));
   box-shadow: var(--row-shadow);
 }
 
