@@ -121,7 +121,7 @@ export default function PreviewPage() {
     <main className="mx-auto w-full max-w-5xl flex-1 px-6 py-12">
       <header className="mb-8 flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-semibold tracking-tight">Dashboard</h1>
+          <h1 className="text-3xl font-semibold tracking-tight">訂閱總覽</h1>
           <p className="text-sm text-muted-foreground">Preview (mock data)</p>
         </div>
         <ThemeToggle />

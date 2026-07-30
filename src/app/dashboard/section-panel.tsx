@@ -62,10 +62,19 @@ export function SectionPanel({
           open ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
         }`}
       >
-        <div className="overflow-hidden">
+        {/* Horizontal breathing room for the rows' shadows: `overflow-hidden`
+            clips at this element's padding edge, so without it the side
+            shadows were sliced off flat. The negative margin cancels the
+            padding, so rows keep their original left/right alignment.
+            Vertical clearance can't go here — padding on the clipping box
+            survives the 0fr track and would leave a gap under a collapsed
+            section — so it lives on the content div below instead. */}
+        <div className="-mx-2 overflow-hidden px-2">
           {/* Padding rather than margin: a margin would escape the clipped
-              track and leave a gap under a collapsed section. */}
-          <div id={contentId} className="pt-5" inert={!open}>
+              track and leave a gap under a collapsed section. `pb` is the
+              bottom row's shadow clearance (~4.5px of reach), which used to
+              land outside the clip box and get cut flat. */}
+          <div id={contentId} className="pt-5 pb-1.5" inert={!open}>
             {children}
           </div>
         </div>

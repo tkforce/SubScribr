@@ -77,7 +77,10 @@ export default async function DashboardPage() {
     <main className="mx-auto w-full max-w-5xl flex-1 px-6 py-12">
       <header className="mb-8 flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-semibold tracking-tight">Dashboard</h1>
+          {/* Not "Dashboard": that names the furniture, not the content, and
+              it's the only English noun left among 訂閱分析 / 訂閱明細. The
+              three now read as one family, top to bottom. */}
+          <h1 className="text-3xl font-semibold tracking-tight">訂閱總覽</h1>
           <p className="text-sm text-muted-foreground">
             Signed in as {session.user.email}
           </p>
