@@ -56,7 +56,7 @@ describe("ingestEmails", () => {
 
     await ingestEmails("access-token", "user-1", 90, (m) => messages.push(m));
 
-    expect(messages).toContain("Gmail 篩選⋯找到 3 封候選信件");
+    expect(messages).toContain("Filtering on Gmail… 3 candidates");
   });
 
   it("reports progress once per email examined", async () => {
@@ -71,8 +71,8 @@ describe("ingestEmails", () => {
 
     // The running counter is what makes a 56-second first sync legible, so
     // assert both ticks arrive rather than just "some progress happened".
-    expect(messages.filter((m) => m.includes("1 / 2"))).toHaveLength(1);
-    expect(messages.filter((m) => m.includes("2 / 2"))).toHaveLength(1);
+    expect(messages.filter((m) => m.includes("1 of 2"))).toHaveLength(1);
+    expect(messages.filter((m) => m.includes("2 of 2"))).toHaveLength(1);
   });
 
   it("runs unchanged when no progress handler is passed", async () => {

@@ -4,19 +4,19 @@ import { SectionPanel } from "./section-panel";
 import { upcomingBilling, type SubscriptionView } from "@/lib/queries/subscriptions";
 
 const CYCLE_LABEL: Record<string, string> = {
-  monthly: "月繳",
-  yearly: "年繳",
-  quarterly: "季繳",
-  "one-time": "一次性",
+  monthly: "Monthly",
+  yearly: "Yearly",
+  quarterly: "Quarterly",
+  "one-time": "One-time",
 };
 
 const CATEGORY_LABEL: Record<string, string> = {
-  entertainment: "娛樂",
-  productivity: "生產力",
+  entertainment: "Entertainment",
+  productivity: "Productivity",
   ai: "AI",
-  cloud: "雲端",
-  comm: "通訊",
-  other: "其他",
+  cloud: "Cloud",
+  comm: "Comms",
+  other: "Other",
 };
 
 // Tinted pill per category; label text carries identity, color is reinforcement.
@@ -62,9 +62,9 @@ export function SubscriptionList({
   return (
     <SectionPanel
       icon={<CreditCard />}
-      title="訂閱明細"
+      title="Subscriptions"
       meta={
-        subscriptions.length > 0 ? `${subscriptions.length} 個服務` : undefined
+        subscriptions.length > 0 ? `${subscriptions.length} ${subscriptions.length === 1 ? "service" : "services"}` : undefined
       }
     >
       {subscriptions.length === 0 ? (
@@ -81,7 +81,8 @@ export function SubscriptionList({
         // page and at /dev, a developer page: two things a user cannot act on,
         // while leaving unmentioned the one they can.)
         <p className="text-xs text-muted-foreground">
-          目前沒有使用中的訂閱。已取消或隱藏的訂閱不會顯示在這裡。
+          No active subscriptions. Cancelled and hidden ones aren&apos;t shown
+          here.
         </p>
       ) : (
         <>
@@ -89,10 +90,10 @@ export function SubscriptionList({
             className={`${GRID} px-4 pb-1.5 text-[11px] uppercase tracking-wide text-muted-foreground/60`}
           >
             <span />
-            <span>服務</span>
-            <span>金額</span>
-            <span>週期</span>
-            <span className="text-right">下次扣款</span>
+            <span>Service</span>
+            <span>Amount</span>
+            <span>Cycle</span>
+            <span className="text-right">Next charge</span>
           </div>
           <ul className="flex flex-col gap-2">
             {subscriptions.map((s) => {

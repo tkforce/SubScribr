@@ -93,7 +93,7 @@ export function AnalysisSection({
 }) {
   const { status, progress, result, error, run } = useEventStream<AnalysisResult>(
     "/api/analyze",
-    "開始分析...",
+    "Starting analysis…",
   );
 
   // Guards against StrictMode's double-mount in dev. The server-rendered
@@ -112,7 +112,7 @@ export function AnalysisSection({
 
   // The previous analysis is cleared while a new one runs, rather than kept
   // on screen stale-while-revalidate style. An analysis asserts things about
-  // the current state of the log ("有 4 件事需要注意"), so once the log has
+  // the current state of the log ("4 things need attention"), so once the log
   // moved on the old text isn't merely dated — it's wrong, and sitting under
   // a spinner it still reads as current.
   const analysis = streaming ? null : (streamed ?? initial);
@@ -127,7 +127,7 @@ export function AnalysisSection({
   return (
     <SectionPanel
       icon={<Sparkles />}
-      title="訂閱分析"
+      title="Analysis"
       meta={
         <p role="status" aria-live="polite" className="flex items-center gap-2">
           {streaming ? (
@@ -136,7 +136,7 @@ export function AnalysisSection({
               <span>{progress}</span>
             </>
           ) : (
-            <span>{streamed ? "剛剛分析" : freshnessLabel}</span>
+            <span>{streamed ? "Analyzed just now" : freshnessLabel}</span>
           )}
         </p>
       }
@@ -146,7 +146,9 @@ export function AnalysisSection({
         <AnalysisSkeleton />
       ) : analysis === null ? (
         <p className="text-xs text-muted-foreground">
-          {hasSubscriptions ? "尚未分析。" : "尚無訂閱資料可供分析。"}
+          {hasSubscriptions
+            ? "Not analyzed yet."
+            : "No subscriptions to analyze yet."}
         </p>
       ) : (
         <div className="flex flex-col gap-4">

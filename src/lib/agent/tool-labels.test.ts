@@ -2,14 +2,22 @@ import { describe, it, expect } from "vitest";
 import { toolProgressLabel } from "./tool-labels";
 
 describe("toolProgressLabel", () => {
-  it("gives a zh-TW label for each known tool", () => {
-    expect(toolProgressLabel("query_subscriptions")).toBe("查詢訂閱現況中...");
-    expect(toolProgressLabel("calculate_trend")).toBe("計算花費趨勢中...");
-    expect(toolProgressLabel("detect_anomalies")).toBe("偵測異常訂閱中...");
-    expect(toolProgressLabel("get_service_info")).toBe("查詢服務定價資訊中...");
+  it("gives a label for each known tool", () => {
+    expect(toolProgressLabel("query_subscriptions")).toBe(
+      "Reading your subscriptions…",
+    );
+    expect(toolProgressLabel("calculate_trend")).toBe(
+      "Calculating spend trend…",
+    );
+    expect(toolProgressLabel("detect_anomalies")).toBe(
+      "Scanning for anomalies…",
+    );
+    expect(toolProgressLabel("get_service_info")).toBe(
+      "Looking up service pricing…",
+    );
   });
 
   it("falls back to a generic label for an unknown tool", () => {
-    expect(toolProgressLabel("something_new")).toBe("分析中...");
+    expect(toolProgressLabel("something_new")).toBe("Analyzing…");
   });
 });

@@ -31,7 +31,7 @@ export function EmptyInbox({
   const router = useRouter();
   const { status, progress, result, error, run } = useEventStream<IngestDone>(
     "/api/ingest",
-    "準備中⋯",
+    "Getting ready…",
   );
 
   const fired = useRef(false);
@@ -68,7 +68,7 @@ export function EmptyInbox({
           // button that does nothing.
           note:
             status === "done"
-              ? "剛剛重新掃描過，仍然沒有找到訂閱帳單信件。"
+              ? "Just scanned again — still no subscription billing emails."
               : lastSyncedLabel,
         };
 
@@ -76,7 +76,7 @@ export function EmptyInbox({
     <SyncScreen
       state={state}
       action={{
-        label: scanning ? "掃描中⋯" : "重新掃描 Gmail",
+        label: scanning ? "Scanning…" : "Scan Gmail again",
         onClick: () => run({ force: true }),
         // Held down for the whole round-trip, not just the click, so an
         // impatient second press can't queue another 56-second scan.
