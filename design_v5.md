@@ -1,19 +1,3 @@
-# Subscription Manager
-
-Credential:
-
-Client ID:
-
-[500459023232-bp10fvv55apekg8g4pgg6e0ugfhv4iln.apps.googleusercontent.com](http://500459023232-bp10fvv55apekg8g4pgg6e0ugfhv4iln.apps.googleusercontent.com/)
-
-Client Secret:
-
-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
-
-Supabase:
-
-sZvZRYyvW4q7vIbC
-
 # AI Subscription Manager — v5 完整規劃
 
 ---

@@ -1,7 +1,8 @@
 # Prompt Iteration Log
 
 每版 prompt 改動與 inspect 對照結果。inspect-*.json 含個人 email 內文不 commit，
-此檔只記 metadata（gmailMessageId、subject、pattern）。
+此檔只記歸納後的 pattern，不記可回指到特定信箱的 metadata（gmailMessageId、
+寄件機構名稱）—— 對讀者有用的是「哪一類信會被誤判」，不是「是誰的哪一封」。
 
 ---
 
@@ -14,12 +15,13 @@
 
 ### 人工標記 false positives（user 標記，2026-06-11）
 
-| gmailMessageId | Subject | Pattern（為什麼不是訂閱） |
+4 筆，歸納成 3 個 pattern：
+
+| 信件類型 | 筆數 | Pattern（為什麼不是訂閱） |
 |---|---|---|
-| 19d74e41ad77826b | 信用卡帳單繳款通知（中國信託） | 信用卡月結帳單：多筆消費彙總，非單一服務的訂閱費 |
-| 19cd582e27556bb7 | 信用卡帳單繳款通知（中國信託） | 同上（同 pattern 第二封） |
-| 19cf4ea49a844448 | 台股定期定額買股預先圈存(或預收)款項通知書（富邦證券） | 定期定額投資扣款：雖然每月定期，但是投資不是服務訂閱 |
-| 19cd4fa660670e02 | Important – AWS Invoice e-mail address changes | 帳務行政通知：無扣款事件，只是設定變更通知 |
+| 銀行信用卡帳單繳款通知 | 2 | 信用卡月結帳單：多筆消費彙總，非單一服務的訂閱費 |
+| 券商定期定額扣款通知書 | 1 | 定期定額投資扣款：雖然每月定期，但是投資不是服務訂閱 |
+| 雲端服務帳務設定變更通知 | 1 | 帳務行政通知：無扣款事件，只是設定變更通知 |
 
 Pattern 歸納（3 個）：
 1. **信用卡/銀行月結帳單** — 「帳單」「繳款」字樣但是消費彙總
@@ -27,8 +29,8 @@ Pattern 歸納（3 個）：
 3. **帳務行政通知** — 與帳單相關但無實際扣款事件
 
 邊界判定紀錄（user 裁定，**不是** FP）：
-- 電信月租帳單（台灣大哥大/遠傳）→ **是訂閱**（schema 本有 comm category）
-- trial 結束提醒（Google One 新用戶優惠將結束）→ **是訂閱**：試用期是訂閱
+- 電信業者月租帳單 → **是訂閱**（schema 本有 comm category）
+- trial 結束提醒（雲端儲存空間的新用戶優惠將結束）→ **是訂閱**：試用期是訂閱
   生命週期的一部分，只是還沒開始付費
 
 ---
@@ -106,8 +108,8 @@ Pattern 歸納（3 個）：
   | category | 0.78 | 0.78 |
   | rawServiceName | 0.67 | 0.67 |
 
-  Identical — same FP id (19e9a4554a81906d), same FN id (19d9531b561e2fe7,
-  an extraction failure rather than a misjudgement), same field mismatches.
+  Identical — same single FP, same single FN (an extraction failure rather
+  than a misjudgement), same field mismatches.
   **Instruction language is not a factor for this task.**
 - Note: the gap against the committed v4 numbers (which show 1.00 on the gate)
   is the model, not the prompt — v4 ran on gemini-2.5-flash-lite. v4 and v5 have
