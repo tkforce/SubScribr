@@ -2,7 +2,10 @@ import { tool } from "ai";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { computeOverview, monthlyAmountTwd } from "@/lib/queries/subscriptions";
-import { SERVICE_REGISTRY, normalizeServiceName } from "@/lib/services/normalization";
+import {
+  SERVICE_REGISTRY,
+  normalizeServiceName,
+} from "@/lib/services/normalization";
 import { getServiceKnowledge } from "@/lib/services/knowledge";
 import {
   computeMonthDelta,
@@ -31,15 +34,17 @@ const querySubscriptionsInput = z.object({
   status: z
     .enum(["active", "cancelled", "hidden", "all"])
     .optional()
-    .describe("訂閱狀態，省略時預設只回傳 active（使用中）的訂閱"),
+    .describe(
+      "Subscription status. Omit to get only active ones, which is the default.",
+    ),
   category: z
     .enum(CATEGORIES)
     .optional()
-    .describe("只查特定分類時使用"),
+    .describe("Set to look at one category only."),
   serviceName: z
     .string()
     .optional()
-    .describe("只查單一服務時使用，例如 netflix 或 Netflix"),
+    .describe("Set to look at one service only, e.g. netflix or Netflix."),
 });
 
 export type SubscriptionFilter = z.infer<typeof querySubscriptionsInput>;
@@ -47,7 +52,12 @@ export type SubscriptionFilter = z.infer<typeof querySubscriptionsInput>;
 export function buildSubscriptionWhere(
   userId: string,
   filter: SubscriptionFilter,
-): { userId: string; status?: string; category?: string; serviceName?: string } {
+): {
+  userId: string;
+  status?: string;
+  category?: string;
+  serviceName?: string;
+} {
   const where: ReturnType<typeof buildSubscriptionWhere> = { userId };
 
   const status = filter.status ?? "active";
@@ -115,7 +125,7 @@ export function getServiceInfoForAgent(serviceName: string) {
     return {
       found: false as const,
       serviceName,
-      note: "知識庫沒有這個服務的資料，請根據使用者自己的帳單資料回答，不要猜測方案或價格。",
+      note: "The knowledge base has nothing on this service. Answer from the user's own billing data and do not guess at plans or prices.",
     };
   }
   return { found: true as const, ...knowledge };
@@ -125,9 +135,10 @@ export function buildAgentTools(userId: string) {
   return {
     query_subscriptions: tool({
       description:
-        "查詢使用者目前的訂閱清單（服務、金額、週期、下次扣款日、分類、狀態）。" +
-        "需要知道使用者「訂了什麼、花多少錢」時用這個。" +
-        "不含歷史金額變化，也不含服務的方案知識。",
+        "The user's current subscriptions: service, amount, cycle, next charge " +
+        "date, category, status. Use this to find out what they subscribe to and " +
+        "what it costs. Carries no price history and no knowledge about the " +
+        "services themselves.",
       inputSchema: querySubscriptionsInput,
       execute: async (filter) => {
         const rows = await db.subscription.findMany({
@@ -137,7 +148,10 @@ export function buildAgentTools(userId: string) {
         const subscriptions = rows.map(shapeSubscriptionForAgent);
         // Pre-computed so the model never does its own arithmetic.
         const { totalMonthlyTwd } = computeOverview(
-          rows.map((r) => ({ cycle: r.cycle, amountInTwd: Number(r.amountInTwd) })),
+          rows.map((r) => ({
+            cycle: r.cycle,
+            amountInTwd: Number(r.amountInTwd),
+          })),
         );
         return { count: subscriptions.length, totalMonthlyTwd, subscriptions };
       },
@@ -145,39 +159,53 @@ export function buildAgentTools(userId: string) {
 
     get_service_info: tool({
       description:
-        "查詢訂閱服務的公開知識：方案級距與定價、近期漲價歷史、家庭方案規則、取消訂閱網址。" +
-        "需要判斷使用者「付的價格是否合理、有沒有更划算的方案、最近是否漲價」時用這個。" +
-        "不含使用者自己的訂閱資料。",
+        "Public knowledge about a service: plan tiers and pricing, recent price " +
+        "increases, family-plan rules, cancellation URL. Use this to judge " +
+        "whether what the user pays is reasonable, whether a cheaper plan " +
+        "exists, or whether the service raised prices recently. Carries none of " +
+        "the user's own data.",
       inputSchema: z.object({
         serviceName: z
           .string()
-          .describe("服務名稱或 canonical ID，例如 netflix 或 Netflix"),
+          .describe("Service name or canonical id, e.g. netflix or Netflix."),
       }),
       execute: async ({ serviceName }) => getServiceInfoForAgent(serviceName),
     }),
 
     calculate_trend: tool({
       description:
-        "從使用者的歷史帳單計算消費趨勢。不帶 serviceName：回傳最近 N 個月的整體月支出趨勢" +
-        "（TWD、含上月比較）。帶 serviceName：回傳該服務的歷史帳單金額列表與偵測到的漲降價。" +
-        "需要回答「花費怎麼變化、某服務對使用者漲過價嗎」時用這個。同一次分析不要重複查同樣的參數。",
+        "Spend trend computed from the user's billing history. Without " +
+        "serviceName: overall monthly spend for the last N months in TWD, " +
+        "including the comparison against last month. With serviceName: that " +
+        "service's billed amounts over time plus any increases or decreases " +
+        "detected. Use this to answer how spending moved, or whether a service " +
+        "raised its price on this user. Do not call it twice with the same " +
+        "arguments in one analysis.",
       inputSchema: z.object({
         serviceName: z
           .string()
           .optional()
-          .describe("要查單一服務的價格歷史時使用；省略時回傳整體月支出趨勢"),
+          .describe(
+            "Set for one service's price history; omit for overall monthly spend.",
+          ),
         months: z
           .number()
           .int()
           .min(2)
           .max(12)
           .optional()
-          .describe("整體趨勢回看的月數，預設 6，只在不帶 serviceName 時有意義"),
+          .describe(
+            "How many months the overall trend looks back. Defaults to 6; only meaningful without serviceName.",
+          ),
       }),
       execute: async ({ serviceName, months }) => {
         if (!serviceName) {
           const points = await getMonthlyTrend(userId, months ?? 6);
-          return { scope: "overall" as const, points, delta: computeMonthDelta(points) };
+          return {
+            scope: "overall" as const,
+            points,
+            delta: computeMonthDelta(points),
+          };
         }
 
         const canonicalId = toCanonicalId(serviceName);
@@ -209,7 +237,7 @@ export function buildAgentTools(userId: string) {
             scope: "service" as const,
             found: false as const,
             serviceName: canonicalId,
-            note: "帳單紀錄裡沒有這個服務的金額事件，無法計算趨勢。請確認服務名稱，或改用 query_subscriptions 看使用者訂了什麼。",
+            note: "No billing events for this service, so there is no trend to compute. Check the service name, or use query_subscriptions to see what the user actually has.",
           };
         }
         return {
@@ -224,17 +252,22 @@ export function buildAgentTools(userId: string) {
 
     detect_anomalies: tool({
       description:
-        "掃描使用者訂閱的異常事實：duplicate（同分類有多個使用中訂閱）、idle（太久沒收到帳單信，" +
-        "可能已在外部取消）、price_change（同服務金額變動）、upcoming_renewal（14 天內即將扣款或" +
-        "試用到期）。要產生「需要注意的事項」清單時用這個；不帶 types 就四種全掃。" +
-        "回傳的是事實，是否真的算問題由你判斷（例如同分類兩個訂閱不一定重複）。",
+        "Scans the user's subscriptions for anomalous facts: duplicate " +
+        "(several active subscriptions in one category), idle (no billing email " +
+        "for a long time, possibly cancelled elsewhere), price_change (a " +
+        "service's amount moved), upcoming_renewal (a charge due within 14 " +
+        "days). Use this to build the list of things needing attention; omit " +
+        "types to scan all four. What comes back are facts — whether each one " +
+        "is really a problem is your call (two subscriptions in one category " +
+        "are not necessarily duplicates).",
       inputSchema: z.object({
         types: z
           .array(z.enum(ANOMALY_TYPES))
           .optional()
-          .describe("要掃描的異常種類，省略時全部掃描"),
+          .describe("Which anomaly kinds to scan; omit to scan all of them."),
       }),
-      execute: async ({ types }) => detectAnomalies(userId, types ?? ANOMALY_TYPES),
+      execute: async ({ types }) =>
+        detectAnomalies(userId, types ?? ANOMALY_TYPES),
     }),
   };
 }
