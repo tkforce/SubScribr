@@ -99,6 +99,10 @@ async function inspectOne(email: SubscriptionEmail): Promise<InspectResult> {
       schema: ExtractionSchema,
       system: SYSTEM_PROMPT,
       prompt: formatUserPrompt(email),
+      // Production's llmExtract pins this to 0. Without it here the eval was
+      // scoring a slightly different model configuration than the one that
+      // ships, which is the one thing an eval must not do.
+      temperature: 0,
     });
     return { ...base, outcome: "extracted", extraction: object, error: null };
   } catch (err) {
