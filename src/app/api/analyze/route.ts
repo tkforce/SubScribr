@@ -71,7 +71,7 @@ export async function POST() {
       await saveAgentTrace(userId, null, "failed").catch(() => {});
       send({
         type: "error",
-        message: err instanceof Error ? err.message : "分析失敗",
+        message: err instanceof Error ? err.message : "Analysis failed",
       });
     }
   });

@@ -20,7 +20,7 @@ export function FirstRunSync() {
   const router = useRouter();
   const { status, progress, result, error, run } = useEventStream<IngestDone>(
     "/api/ingest",
-    "準備中⋯",
+    "Getting ready…",
   );
 
   // Guards against StrictMode's double-mount in dev. On success we navigate
@@ -57,7 +57,7 @@ export function FirstRunSync() {
         state={state}
         action={
           failure
-            ? { label: "重新嘗試", onClick: () => run({ force: true }) }
+            ? { label: "Try again", onClick: () => run({ force: true }) }
             : undefined
         }
       />

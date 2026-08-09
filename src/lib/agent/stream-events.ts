@@ -36,7 +36,7 @@ export type StreamFailure = {
 function describe(error: unknown): string {
   if (error instanceof Error) return error.message;
   if (typeof error === "string") return error;
-  if (error == null) return "未知的串流錯誤";
+  if (error == null) return "Unknown stream error";
   // String(obj) gives "[object Object]", which is exactly the kind of useless
   // message this whole function exists to avoid.
   try {
@@ -62,7 +62,7 @@ export function extractStreamError(
   if (chunk.type === "tool-error") {
     return {
       fatal: false,
-      message: `${chunk.toolName ?? "工具"} 失敗：${describe(chunk.error)}`,
+      message: `${chunk.toolName ?? "A tool"} failed: ${describe(chunk.error)}`,
     };
   }
   return null;

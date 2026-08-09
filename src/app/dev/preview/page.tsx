@@ -55,41 +55,42 @@ const MOCK_SUBS: SubscriptionView[] = [
 ];
 
 const MOCK_ANALYSIS: Analysis = {
-  headline: "本月支出增加 NT$106，增幅約 9%；有 4 件事需要注意。",
+  headline: "Spend is up NT$106 this month, about 9%; 4 things need attention.",
   insights: [
     {
       kind: "alert",
       priority: "high",
       serviceName: "Netflix",
-      title: "Netflix 可能已在外部取消",
-      detail: "已 3 個月沒有扣款紀錄，但狀態仍顯示使用中。",
+      title: "Netflix may already be cancelled",
+      detail: "No charge for three months, but it still shows as active.",
       suggestion:
-        "到 Netflix 官網確認這筆訂閱是否已經取消，避免帳戶持續被扣款。",
+        "Confirm on Netflix's site whether this is cancelled, so you stop being charged.",
     },
     {
       kind: "alert",
       priority: "medium",
-      serviceName: "AI 服務",
-      title: "疑似重複訂閱 AI 服務",
+      serviceName: "AI services",
+      title: "Possibly overlapping AI subscriptions",
       detail:
-        "您同時訂閱「Cursor Pro」（每月 NT$640）與「Notion AI」（每月 NT$256），合計每月 NT$896。",
+        "You subscribe to both Cursor Pro (NT$640/mo) and Notion AI (NT$256/mo) — NT$896 a month together.",
       suggestion:
-        "考量您是否確實需要同時訂閱這兩項服務。若只保留其一，取消 Notion AI 可省下每月 NT$256。",
+        "Consider whether you need both. Keeping one and cancelling Notion AI saves NT$256 a month.",
     },
     {
       kind: "change",
       priority: "low",
       serviceName: "Cursor Pro",
-      title: "Cursor Pro 漲價 US$4",
-      detail: "月費從 US$20 調整為 US$24，年化增加約 NT$1,536。",
+      title: "Cursor Pro is US$4 more expensive",
+      detail:
+        "The monthly fee went from US$20 to US$24 — about NT$1,536 more per year.",
     },
     {
       kind: "observation",
       priority: "low",
-      serviceName: "AI 類訂閱",
-      title: "AI 類訂閱佔比三個月內翻倍",
+      serviceName: "AI subscriptions",
+      title: "AI subscriptions doubled their share in three months",
       detail:
-        "AI 類訂閱從 1 個增加到 3 個，佔月支出從 24% 上升到 52%，是本月支出結構最大的變化。",
+        "AI went from 1 subscription to 3, and from 24% to 52% of monthly spend — the biggest shift this month.",
     },
   ],
 };
@@ -121,7 +122,7 @@ export default function PreviewPage() {
     <main className="mx-auto w-full max-w-5xl flex-1 px-6 py-12">
       <header className="mb-8 flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-semibold tracking-tight">訂閱總覽</h1>
+          <h1 className="text-3xl font-semibold tracking-tight">Overview</h1>
           <p className="text-sm text-muted-foreground">Preview (mock data)</p>
         </div>
         <ThemeToggle />
@@ -133,46 +134,47 @@ export default function PreviewPage() {
       />
       <AnalysisSection
         initial={MOCK_ANALYSIS}
-        freshnessLabel="2 小時前分析"
+        freshnessLabel="Analyzed 2h ago"
         stale={false}
         hasSubscriptions
       />
       <TrendChart points={MOCK_TREND} />
       <SubscriptionList subscriptions={MOCK_SUBS} now={new Date()} />
 
-      <Divider label="訂閱全部已取消或隱藏" />
+      <Divider label="every subscription cancelled or hidden" />
       <SubscriptionList subscriptions={[]} now={new Date()} />
 
-      <Divider label="同步中（無既有資料）" />
+      <Divider label="syncing, nothing on screen yet" />
       <StatRowSkeleton />
       <TrendChartSkeleton />
       <SubscriptionListSkeleton />
 
-      <Divider label="首次登入：同步進行中" />
-      <SyncScreen state={{ kind: "working", progress: "AI 判讀中⋯128 / 312" }} />
+      <Divider label="first sign-in: sync running" />
+      <SyncScreen state={{ kind: "working", progress: "Reading email 128 of 312…" }} />
 
-      <Divider label="首次登入：判讀失敗" />
+      <Divider label="first sign-in: extraction failed" />
       <SyncScreen
         state={{
           kind: "failed",
-          message: "280 封信件判讀失敗，可能是暫時性問題，稍後重新同步即可。",
+          message:
+            "280 emails could not be read — probably temporary. Syncing again later will pick them up.",
         }}
-        action={{ label: "重新嘗試" }}
+        action={{ label: "Try again" }}
       />
 
-      <Divider label="掃描過但完全沒有訂閱信件" />
+      <Divider label="scanned, no subscription mail at all" />
       <SyncScreen
         state={{ kind: "empty", note: "Last synced: 3m ago" }}
-        action={{ label: "重新掃描 Gmail" }}
+        action={{ label: "Scan Gmail again" }}
       />
 
-      <Divider label="沒有訂閱：剛按過重新掃描" />
+      <Divider label="nothing found: just pressed rescan" />
       <SyncScreen
         state={{
           kind: "empty",
-          note: "剛剛重新掃描過，仍然沒有找到訂閱帳單信件。",
+          note: "Just scanned again — still no subscription billing emails.",
         }}
-        action={{ label: "掃描中⋯", disabled: true }}
+        action={{ label: "Scanning…", disabled: true }}
       />
     </main>
   );

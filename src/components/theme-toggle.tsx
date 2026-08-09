@@ -57,7 +57,9 @@ export function ThemeToggle() {
     <button
       type="button"
       onClick={() => toggleTheme(theme)}
-      aria-label={theme === "dark" ? "切換為淺色模式" : "切換為深色模式"}
+      aria-label={
+        theme === "dark" ? "Switch to light mode" : "Switch to dark mode"
+      }
       className="glass inline-flex size-9 items-center justify-center rounded-full bg-card/60 text-muted-foreground transition-colors hover:text-foreground"
     >
       {theme === "dark" ? (

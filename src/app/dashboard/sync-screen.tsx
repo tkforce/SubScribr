@@ -14,16 +14,17 @@ export type SyncScreenState =
 
 const COPY = {
   working: {
-    title: "正在整理你的訂閱",
-    description: `正在掃描過去 ${INGEST_WINDOW_DAYS} 天的 Gmail，第一次通常需要一分鐘左右。`,
+    title: "Sorting out your subscriptions",
+    description: `Scanning the last ${INGEST_WINDOW_DAYS} days of Gmail. The first run usually takes about a minute.`,
   },
   failed: {
-    title: "同步未完成",
-    description: "可以重新嘗試，已經處理過的信件不會重複計算。",
+    title: "Sync didn't finish",
+    description:
+      "You can try again — emails already processed won't be counted twice.",
   },
   empty: {
-    title: "沒有找到訂閱",
-    description: `過去 ${INGEST_WINDOW_DAYS} 天的 Gmail 裡沒有訂閱帳單信件。等你訂閱了服務、收到第一封扣款或續訂通知之後，再回來掃描就會看到內容。`,
+    title: "No subscriptions found",
+    description: `No subscription billing emails in the last ${INGEST_WINDOW_DAYS} days of Gmail. Once you subscribe to something and the first charge or renewal notice arrives, scan again and it will show up here.`,
   },
 } as const;
 
@@ -98,7 +99,7 @@ export function SyncScreen({
 
       <p className="mt-10 flex items-center gap-1.5 text-xs text-muted-foreground">
         <ShieldCheck className="h-3.5 w-3.5" aria-hidden />
-        信件內容只在記憶體中處理，不會被儲存
+        Email bodies are processed in memory and never stored
       </p>
     </div>
   );

@@ -34,7 +34,7 @@ export function DevTools() {
   // real path rather than a parallel one that could drift from it.
   const ingest = useEventStream<{ stats: IngestStats | null }>(
     "/api/ingest",
-    "準備同步⋯",
+    "Preparing to sync…",
   );
   const isIngesting = ingest.status === "streaming";
   const ingestStats = ingest.result?.stats ?? null;
@@ -92,7 +92,7 @@ export function DevTools() {
         )}
         {hasFetched && !shownError && (
           <span className="text-sm text-muted-foreground">
-            {emails.length} 封
+            {emails.length} emails
           </span>
         )}
         {shownError && (

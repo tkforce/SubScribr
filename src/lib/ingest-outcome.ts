@@ -20,33 +20,33 @@ export function describeIngestOutcome(stats: IngestStats): IngestOutcome {
   if (stats.extractFailedCount > 0) {
     return {
       tone: "warning",
-      message: `${stats.extractFailedCount} 封信件判讀失敗，可能是暫時性問題，稍後重新同步即可。`,
+      message: `${stats.extractFailedCount} ${stats.extractFailedCount === 1 ? "email" : "emails"} could not be read — probably temporary. Syncing again later will pick them up.`,
     };
   }
 
   if (stats.candidateCount === 0) {
     return {
       tone: "neutral",
-      message: `過去 ${INGEST_WINDOW_DAYS} 天沒有找到帳單類信件。`,
+      message: `No billing emails in the last ${INGEST_WINDOW_DAYS} days.`,
     };
   }
 
   if (examined === 0) {
     return {
       tone: "neutral",
-      message: `${stats.candidateCount} 封信件先前皆已掃描，沒有新的訂閱紀錄。`,
+      message: `All ${stats.candidateCount} candidate emails were already scanned — nothing new.`,
     };
   }
 
   if (stats.ingestedCount === 0) {
     return {
       tone: "neutral",
-      message: `掃描了 ${examined} 封帳單類信件，都不是定期訂閱。`,
+      message: `Read ${examined} billing ${examined === 1 ? "email" : "emails"} — none of them is a recurring subscription.`,
     };
   }
 
   return {
     tone: "neutral",
-    message: `從 ${stats.ingestedCount} 封信件建立了訂閱紀錄。`,
+    message: `Recorded subscriptions from ${stats.ingestedCount} ${stats.ingestedCount === 1 ? "email" : "emails"}.`,
   };
 }

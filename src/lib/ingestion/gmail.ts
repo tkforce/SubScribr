@@ -27,6 +27,8 @@ export function buildSubscriptionQuery(days = 60): string {
     "billing",
     "payment",
   ];
+  // Gmail matches these against the subject as written, so they follow the
+  // language of the mail, not the language of the UI.
   const chineseKeywords = ["收據", "發票", "帳單"];
   const subjectKeywords = [...englishKeywords, ...chineseKeywords].join(" OR ");
   return `newer_than:${days}d (category:purchases OR subject:(${subjectKeywords}))`;

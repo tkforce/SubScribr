@@ -25,7 +25,7 @@ export function StatRowSkeleton() {
 
 export function TrendChartSkeleton() {
   return (
-    <SectionPanel icon={<BarChart3 />} title="月支出趨勢">
+    <SectionPanel icon={<BarChart3 />} title="Monthly spend">
       <div className="h-[220px] animate-pulse rounded-xl bg-muted-foreground/10" aria-hidden />
     </SectionPanel>
   );
@@ -33,7 +33,7 @@ export function TrendChartSkeleton() {
 
 export function SubscriptionListSkeleton() {
   return (
-    <SectionPanel icon={<CreditCard />} title="訂閱明細">
+    <SectionPanel icon={<CreditCard />} title="Subscriptions">
       <ul className="flex animate-pulse flex-col gap-2" aria-hidden>
         {[0, 1, 2].map((i) => (
           <li

@@ -73,3 +73,42 @@ Pattern 歸納（3 個）：
 - 殘留 FP：0
 - 觀察：fixture 會過期 — 真實管線是 FP 的最終偵測面，fixture 要定期
   從 Dashboard 重新匯出。
+
+---
+
+## v6-english-instructions-temp0 (2026-07-30)
+
+- Trigger: the product's UI moved to English, so the prompt no longer had to
+  match the interface language. Instructions rewritten in English; the examples
+  were deliberately **not** translated.
+- What changed:
+  - Rules, field descriptions and reasoning: zh-TW → English
+  - Example subject lines stay zh-TW (信用卡帳單繳款通知, 台股定期定額…,
+    購買成功通知 | More Fit) — they are the real strings the model has to
+    recognise, and translating them would delete the signal
+  - Currency section still lists NT$ / 新台幣 / 元 as literal markers, for the
+    same reason
+  - Nothing about the output changed: every field is an enum, a number, or a
+    rawServiceName copied verbatim, so a zh-TW receipt still yields the same
+    BillingEvent
+- Also fixed: `scripts/inspect-extractions.ts` was calling generateObject
+  **without** `temperature: 0`, while production `llmExtract` pins it to 0 — the
+  eval was scoring a different configuration than the one that ships.
+- Like-for-like comparison on the same fixture (191 emails,
+  subscribr-emails-20260612-1656.json), same model (gemini-2.5-flash), both at
+  temperature 0:
+
+  | metric | v5 (zh instructions) | v6 (en instructions) |
+  | --- | --- | --- |
+  | isSubscriptionRelated P/R/F1 | 0.90 / 0.90 / 0.90 | 0.90 / 0.90 / 0.90 |
+  | amount / currency / cycle | 1.00 | 1.00 |
+  | emailSignalType | 1.00 | 1.00 |
+  | category | 0.78 | 0.78 |
+  | rawServiceName | 0.67 | 0.67 |
+
+  Identical — same FP id (19e9a4554a81906d), same FN id (19d9531b561e2fe7,
+  an extraction failure rather than a misjudgement), same field mismatches.
+  **Instruction language is not a factor for this task.**
+- Note: the gap against the committed v4 numbers (which show 1.00 on the gate)
+  is the model, not the prompt — v4 ran on gemini-2.5-flash-lite. v4 and v5 have
+  no entries in this log; only the eval JSONs exist.

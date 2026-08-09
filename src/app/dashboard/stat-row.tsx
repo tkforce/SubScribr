@@ -50,33 +50,37 @@ export function StatRow({
         value: `${delta.deltaTwd >= 0 ? "↑" : "↓"} ${formatTwd(Math.abs(delta.deltaTwd))}`,
         sub:
           delta.pctChange === null
-            ? "上月無資料可比（帳單攤平）"
-            : `較上月 ${delta.pctChange >= 0 ? "+" : "-"}${Math.abs(Math.round(delta.pctChange * 100))}%（帳單攤平）`,
+            ? "No comparable data last month"
+            : `${delta.pctChange >= 0 ? "+" : "-"}${Math.abs(Math.round(delta.pctChange * 100))}% vs last month`,
         valueClassName:
           delta.deltaTwd >= 0
             ? "text-red-600 dark:text-red-400"
             : "text-emerald-600 dark:text-emerald-400",
       }
-    : { value: "—", sub: "尚無足夠帳單資料", valueClassName: "" };
+    : { value: "—", sub: "Not enough billing history", valueClassName: "" };
 
   return (
     <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
       <Stat
-        label="本月總支出"
+        label="This month"
         value={formatTwd(totalMonthlyTwd)}
-        sub="依訂閱週期攤平為每月"
+        sub="Normalized to a monthly figure"
       />
       <Stat
-        label="vs 上月"
+        label="vs last month"
         value={deltaStat.value}
         sub={deltaStat.sub}
         valueClassName={deltaStat.valueClassName}
       />
-      <Stat label="有效訂閱" value={`${activeCount}`} sub="個服務" />
       <Stat
-        label="年化支出"
+        label="Active"
+        value={`${activeCount}`}
+        sub={activeCount === 1 ? "service" : "services"}
+      />
+      <Stat
+        label="Annualized"
         value={formatTwd(totalMonthlyTwd * 12)}
-        sub="以目前訂閱推估"
+        sub="Projected from current subscriptions"
       />
     </div>
   );

@@ -304,7 +304,7 @@ function DashboardPreview({ now }: { now: Date }) {
           {/* Stands in for the dashboard header. Not a heading element: this is
               a picture of a screen, and it shouldn't enter the page outline. */}
           <div className="mb-6 flex items-baseline justify-between gap-3">
-            <p className="text-xl font-semibold tracking-tight">訂閱總覽</p>
+            <p className="text-xl font-semibold tracking-tight">Overview</p>
             <p className="text-xs text-muted-foreground">Last synced: 3m ago</p>
           </div>
 
@@ -317,7 +317,7 @@ function DashboardPreview({ now }: { now: Date }) {
               when the server says its analysis is behind the event log. */}
           <AnalysisSection
             initial={PREVIEW_ANALYSIS}
-            freshnessLabel="12 分鐘前分析"
+            freshnessLabel="Analyzed 12m ago"
             stale={false}
             hasSubscriptions
           />
@@ -345,7 +345,7 @@ function GoogleMark() {
 
 // Preview data. Invented, but internally consistent the way a real account is:
 // the four services below are exactly the NT$1,344 monthly total in the stat
-// row, the headline's "3 件事" is the number of insights, and the insights only
+// row, the headline's "3 things" is the number of insights, and the insights
 // state things the four rows support.
 function inDays(days: number): Date {
   const d = new Date();
@@ -353,7 +353,7 @@ function inDays(days: number): Date {
   return d;
 }
 
-// Relative to today, so the "3 天後扣款" row keeps earning its badge instead of
+// Relative to today, so the "in 3 days" row keeps earning its badge instead of
 // rotting into a past date the moment this file stops being edited.
 const PREVIEW_SUBS: SubscriptionView[] = [
   {
@@ -409,32 +409,33 @@ const PREVIEW_SUBS: SubscriptionView[] = [
 const PREVIEW_MONTHLY_TWD = 1344;
 
 const PREVIEW_ANALYSIS: Analysis = {
-  headline: "本月支出增加 NT$106，增幅約 9%；有 3 件事需要注意。",
+  headline: "Spend is up NT$106 this month, about 9%; 3 things need attention.",
   insights: [
     {
       kind: "alert",
       priority: "high",
       serviceName: "Cursor Pro",
-      title: "Cursor Pro 3 天後續約",
+      title: "Cursor Pro renews in 3 days",
       detail:
-        "US$20（約 NT$640）即將續約，是目前最大的一筆月費，佔每月總支出 48%。",
+        "US$20 (about NT$640) renews this week — your largest single monthly fee, at 48% of monthly spend.",
       suggestion:
-        "如果這個月用量不高，可以先到 Cursor 帳戶頁確認方案，再決定是否保留。",
+        "If you haven't used it much this month, check your plan on Cursor's account page before it renews.",
     },
     {
       kind: "change",
       priority: "medium",
       serviceName: "Netflix",
-      title: "Netflix 漲價 NT$60",
-      detail: "月費從 NT$330 調整為 NT$390，年化增加約 NT$720。",
+      title: "Netflix is NT$60 more expensive",
+      detail:
+        "The monthly fee went from NT$330 to NT$390 — about NT$720 more per year.",
     },
     {
       kind: "observation",
       priority: "low",
-      serviceName: "娛樂類",
-      title: "娛樂類佔月支出 40%",
+      serviceName: "Entertainment",
+      title: "Entertainment is 40% of monthly spend",
       detail:
-        "Netflix 與 Spotify 合計每月 NT$539，是僅次於 AI 的第二大分類。",
+        "Netflix and Spotify come to NT$539 a month between them, the second largest category after AI.",
     },
   ],
 };
