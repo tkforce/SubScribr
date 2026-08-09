@@ -58,6 +58,8 @@ export async function consumeEventStream<TDone>(
   // still in progress, so the UI would spin forever on a request that is
   // already dead.
   if (!settled) {
-    handlers.onError("連線中斷，處理未完成，請重新嘗試。");
+    handlers.onError(
+      "The connection dropped before this finished — please try again.",
+    );
   }
 }

@@ -12,7 +12,7 @@ import type { FlowUsage } from "@/lib/agent/usage";
 // independent lifecycle: one version per ingest, replaced whole. There is no
 // time-based expiry — the ingest freshness gate (AUTO_SYNC_THRESHOLD_HOURS)
 // already guarantees a sync at least twice a day, which doubles as the bound
-// on how stale a date-relative claim ("3 天後扣款") can get.
+// on how stale a date-relative claim ("in 3 days") can get.
 
 // ---------- Pure ----------
 
@@ -102,7 +102,7 @@ export async function saveAnalysis(
   promptVersion: string,
 ): Promise<void> {
   // generatedAt must be set explicitly on update — @default(now()) only fires
-  // on create, so omitting it would freeze the "分析於 X 前" label forever.
+  // on create, so omitting it would freeze the "Analyzed Xh ago" label forever.
   const data = {
     payload: analysis,
     basedOnIngestAt,

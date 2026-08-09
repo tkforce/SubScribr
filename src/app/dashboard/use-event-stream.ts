@@ -50,7 +50,7 @@ export function useEventStream<TDone>(
               : {}),
           });
           if (!res.ok || !res.body) {
-            throw new Error(`請求失敗（${res.status}）`);
+            throw new Error(`Request failed (${res.status})`);
           }
 
           await consumeEventStream<TDone>(res, {
@@ -65,7 +65,7 @@ export function useEventStream<TDone>(
             },
           });
         } catch (e) {
-          setError(e instanceof Error ? e.message : "執行失敗");
+          setError(e instanceof Error ? e.message : "Something went wrong");
           setStatus("error");
         } finally {
           running.current = false;

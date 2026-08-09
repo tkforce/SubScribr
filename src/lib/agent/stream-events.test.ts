@@ -40,7 +40,7 @@ describe("extractStreamError", () => {
         toolName: "calculate_trend",
         error: new Error("boom"),
       }),
-    ).toEqual({ fatal: false, message: "calculate_trend 失敗：boom" });
+    ).toEqual({ fatal: false, message: "calculate_trend failed: boom" });
   });
 
   it("handles a string error", () => {
@@ -61,7 +61,7 @@ describe("extractStreamError", () => {
 
   it("falls back to a readable string when the error is empty", () => {
     const out = extractStreamError({ type: "error", error: undefined });
-    expect(out).toEqual({ fatal: true, message: "未知的串流錯誤" });
+    expect(out).toEqual({ fatal: true, message: "Unknown stream error" });
   });
 
   it("returns null for chunks that aren't errors", () => {

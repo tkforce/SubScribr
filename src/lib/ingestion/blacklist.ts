@@ -1,5 +1,9 @@
 import type { SubscriptionEmail } from "@/lib/ingestion/gmail";
 
+// Patterns match against real subject lines, so they are bilingual by
+// necessity — the zh-TW entries below stay zh-TW no matter what language the UI
+// or the prompts are in. Translating them would not fail loudly; it would just
+// silently stop catching Chinese password-reset and welcome mail.
 const SUBJECT_BLACKLIST = [
   /password reset/i,
   /verify your (email|account)/i,
