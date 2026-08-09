@@ -1,19 +1,3 @@
-# Subscription Manager
-
-Credential:
-
-Client ID:
-
-[***REMOVED-OAUTH-CLIENT-ID***](http://***REMOVED-OAUTH-CLIENT-ID***/)
-
-Client Secret:
-
-***REMOVED-OAUTH-SECRET***
-
-Supabase:
-
-***REMOVED-DB-PASSWORD***
-
 # AI Subscription Manager — v5 完整規劃
 
 ---
