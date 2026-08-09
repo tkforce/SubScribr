@@ -67,7 +67,7 @@ export async function POST(request: Request) {
       console.error("[ingest] run failed:", err);
       send({
         type: "error",
-        message: err instanceof Error ? err.message : "同步失敗",
+        message: err instanceof Error ? err.message : "Sync failed",
       });
     }
   });

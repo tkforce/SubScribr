@@ -32,7 +32,7 @@ export function AutoSync({
   const { setSyncing } = useSyncStatus();
   const { status, progress, result, error, run } = useEventStream<IngestDone>(
     "/api/ingest",
-    "準備同步⋯",
+    "Preparing to sync…",
   );
 
   // Guards against StrictMode double-mount in dev; after a successful sync

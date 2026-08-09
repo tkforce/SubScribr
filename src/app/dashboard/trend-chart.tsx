@@ -14,20 +14,37 @@ import { BarChart3 } from "lucide-react";
 import type { MonthlyTrendPoint } from "@/lib/queries/monthly-trend";
 import { SectionPanel } from "./section-panel";
 
+// Short month names for the x axis: "Feb" reads at a glance where "2026-02"
+// needs decoding, and a six-month window implies the year.
+const MONTH_LABELS = [
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "May",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec",
+];
+
 export function TrendChart({ points }: { points: MonthlyTrendPoint[] }) {
   // Spec: hide the whole card when there is no countable billing spend at all.
   if (!points.some((p) => p.totalTwd > 0)) return null;
 
   const data = points.map((p) => ({
     ...p,
-    label: `${Number(p.month.slice(5))}月`,
+    label: MONTH_LABELS[Number(p.month.slice(5)) - 1],
   }));
 
   return (
     <SectionPanel
       icon={<BarChart3 />}
-      title="月支出趨勢"
-      meta={`最近 ${data.length} 個月 · 依週期攤平`}
+      title="Monthly spend"
+      meta={`Last ${data.length} months · normalized by cycle`}
     >
       <div className="h-48">
         <ResponsiveContainer width="100%" height="100%">
@@ -58,7 +75,7 @@ export function TrendChart({ points }: { points: MonthlyTrendPoint[] }) {
               cursor={{ fillOpacity: 0.06 }}
               formatter={(value) => [
                 `NT$ ${Math.round(Number(value)).toLocaleString()}`,
-                "攤平支出",
+                "Normalized spend",
               ]}
             />
             <Bar dataKey="totalTwd" radius={[6, 6, 0, 0]}>

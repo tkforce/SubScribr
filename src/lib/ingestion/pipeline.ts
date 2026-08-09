@@ -113,13 +113,13 @@ export async function ingestEmails(
 ): Promise<IngestStats> {
   const report = onProgress ?? (() => {});
 
-  report("連線 Gmail⋯");
+  report("Connecting to Gmail…");
 
   const query = buildSubscriptionQuery(days);
   const allIds = await listMessageIds(accessToken, query);
   const candidateCount = allIds.length;
 
-  report(`Gmail 篩選⋯找到 ${candidateCount} 封候選信件`);
+  report(`Filtering on Gmail… ${candidateCount} candidates`);
 
   const existing = await db.billingEvent.findMany({
     where: { userId, gmailMessageId: { in: allIds } },
@@ -129,7 +129,7 @@ export async function ingestEmails(
   const newIds = allIds.filter((id) => !existingIds.has(id));
   const skippedExistingCount = candidateCount - newIds.length;
 
-  if (newIds.length > 0) report(`讀取信件內容⋯${newIds.length} 封`);
+  if (newIds.length > 0) report(`Fetching ${newIds.length} emails…`);
 
   const emails = await fetchMessagesByIds(accessToken, newIds);
 
@@ -141,7 +141,7 @@ export async function ingestEmails(
     async (email) => {
       const outcome = await processEmail(email, userId);
       examined += 1;
-      report(`AI 判讀中⋯${examined} / ${emails.length}`);
+      report(`Reading email ${examined} of ${emails.length}…`);
       return outcome;
     },
     {
@@ -190,7 +190,7 @@ export async function ingestEmails(
 
   // only upsert subscriptions for services that had new billing events to avoid unnecessary upserts
   const affected = new Set(inserts.map((i) => i.serviceName));
-  if (affected.size > 0) report(`整理訂閱資料⋯${affected.size} 個服務`);
+  if (affected.size > 0) report(`Deriving subscriptions… ${affected.size} services`);
   const subscriptionsUpserted = await upsertSubscriptionsForServices(
     userId,
     affected,

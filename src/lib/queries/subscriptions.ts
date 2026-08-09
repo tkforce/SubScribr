@@ -112,7 +112,7 @@ export function upcomingBilling(
   );
   if (days < 0 || days > 7) return null;
   const label =
-    days === 0 ? "今天扣款" : days === 1 ? "明天扣款" : `${days} 天後扣款`;
+    days === 0 ? "today" : days === 1 ? "tomorrow" : `in ${days} days`;
   return { days, label };
 }
 

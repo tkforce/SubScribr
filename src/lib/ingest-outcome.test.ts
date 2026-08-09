@@ -48,7 +48,7 @@ describe("describeIngestOutcome", () => {
       stats({ candidateCount: 40, skippedExistingCount: 40 }),
     );
     expect(outcome.tone).toBe("neutral");
-    expect(outcome.message).toContain("已掃描");
+    expect(outcome.message).toContain("already scanned");
   });
 
   it("counts only newly examined mail when reporting rejections", () => {
