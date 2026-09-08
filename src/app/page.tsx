@@ -4,9 +4,12 @@ import { signInWithGoogle, signOutAction } from "@/app/actions/auth";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { StatRow } from "@/app/dashboard/stat-row";
 import { AnalysisSection } from "@/app/dashboard/analysis-section";
+import { TrendChart } from "@/app/dashboard/trend-chart";
 import { SubscriptionList } from "@/app/dashboard/subscription-list";
 import { INGEST_WINDOW_DAYS } from "@/lib/constants";
+import { computeMonthDelta } from "@/lib/queries/monthly-trend";
 import type { Analysis } from "@/lib/agent/analysis";
+import type { MonthlyTrendPoint } from "@/lib/queries/monthly-trend";
 import type { SubscriptionView } from "@/lib/queries/subscriptions";
 
 export default async function Home() {
@@ -281,6 +284,7 @@ export default async function Home() {
 // UI the dashboard doesn't have — if a section changes shape, this changes
 // with it.
 function DashboardPreview({ now }: { now: Date }) {
+  const trendPoints = previewTrend(now);
   return (
     <div className="relative mx-auto mt-20 max-w-5xl">
       <div className="rounded-2xl border border-white/60 bg-white/60 p-2 shadow-2xl shadow-zinc-900/10 dark:border-white/10 dark:bg-white/[0.03] dark:shadow-black/40">
@@ -308,10 +312,13 @@ function DashboardPreview({ now }: { now: Date }) {
             <p className="text-xs text-muted-foreground">Last synced: 3m ago</p>
           </div>
 
+          {/* The delta is read out of the trend the same way the dashboard
+              reads it, so the stat row's "+NT$106" and the last two bars of
+              the chart below can't disagree. */}
           <StatRow
             totalMonthlyTwd={PREVIEW_MONTHLY_TWD}
             activeCount={PREVIEW_SUBS.length}
-            delta={{ deltaTwd: 106, pctChange: 106 / (PREVIEW_MONTHLY_TWD - 106) }}
+            delta={computeMonthDelta(trendPoints)}
           />
           {/* stale={false} keeps this inert — the section only calls the agent
               when the server says its analysis is behind the event log. */}
@@ -321,6 +328,7 @@ function DashboardPreview({ now }: { now: Date }) {
             stale={false}
             hasSubscriptions
           />
+          <TrendChart points={trendPoints} />
           <SubscriptionList subscriptions={PREVIEW_SUBS} now={now} />
         </div>
       </div>
@@ -351,6 +359,26 @@ function inDays(days: number): Date {
   const d = new Date();
   d.setDate(d.getDate() + days);
   return d;
+}
+
+// Six months ending on the current one, keyed the way getMonthlyTrend keys
+// them ("YYYY-MM") so the chart's month labels roll forward with the calendar.
+// The last two totals are what the stat row's delta and the analysis headline
+// are both quoting: 1,238 → 1,344 is +NT$106, of which NT$60 is the Netflix
+// increase the second insight describes.
+const PREVIEW_MONTHLY_TWD = 1344;
+const PREVIEW_TOTALS = [1088, 1145, 1145, 1178, 1238, PREVIEW_MONTHLY_TWD];
+
+function previewTrend(now: Date): MonthlyTrendPoint[] {
+  return PREVIEW_TOTALS.map((totalTwd, i) => {
+    const d = new Date(
+      now.getFullYear(),
+      now.getMonth() - (PREVIEW_TOTALS.length - 1 - i),
+      1,
+    );
+    const month = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    return { month, totalTwd };
+  });
 }
 
 // Relative to today, so the "in 3 days" row keeps earning its badge instead of
@@ -405,8 +433,6 @@ const PREVIEW_SUBS: SubscriptionView[] = [
     nextBillingDate: inDays(24),
   },
 ];
-
-const PREVIEW_MONTHLY_TWD = 1344;
 
 const PREVIEW_ANALYSIS: Analysis = {
   headline: "Spend is up NT$106 this month, about 9%; 3 things need attention.",
